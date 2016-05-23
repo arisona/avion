@@ -1,0 +1,402 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 46;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		0C1845F21CE60F7F0086CD99 /* avion_avfoundation.mm in Sources */ = {isa = PBXBuildFile; fileRef = 0C1845F11CE60F7F0086CD99 /* avion_avfoundation.mm */; };
+		0C1845F41CE6108B0086CD99 /* AVFoundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 0C1845F31CE6108B0086CD99 /* AVFoundation.framework */; };
+		0C1845FE1CE614460086CD99 /* CoreVideo.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 0C1845FD1CE614460086CD99 /* CoreVideo.framework */; };
+		0C1846021CE6147B0086CD99 /* CoreMedia.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 0C1846011CE6147B0086CD99 /* CoreMedia.framework */; };
+		0C4A0FB51CE649D1000C8F02 /* ch_fhnw_ether_avion_Avion.h in Headers */ = {isa = PBXBuildFile; fileRef = 0C4A0FB41CE649D1000C8F02 /* ch_fhnw_ether_avion_Avion.h */; };
+		0C78FD7C1CE60E4400592A97 /* avion.hpp in Headers */ = {isa = PBXBuildFile; fileRef = 0C78FD7B1CE60E4400592A97 /* avion.hpp */; };
+		0C7AD17B1CE7623200ABCD10 /* avion_test.mm in Sources */ = {isa = PBXBuildFile; fileRef = 0C7AD16D1CE761BC00ABCD10 /* avion_test.mm */; };
+		0C96A9DE1CE9B66600CF5D26 /* audio_buffer.hpp in Headers */ = {isa = PBXBuildFile; fileRef = 0C96A9DD1CE9B66600CF5D26 /* audio_buffer.hpp */; };
+		0CBA055E1CE73169002D012B /* avion_jni.mm in Sources */ = {isa = PBXBuildFile; fileRef = 0CBA055D1CE73169002D012B /* avion_jni.mm */; };
+		0CF3EC871CEDBC6600AEFE0D /* JavaNativeFoundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 0C1845F81CE610EA0086CD99 /* JavaNativeFoundation.framework */; };
+		0CF3EC8A1CEDCD2100AEFE0D /* libavion.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 0C78FD781CE60E4400592A97 /* libavion.dylib */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXContainerItemProxy section */
+		0CF3EC8B1CEDCD9F00AEFE0D /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 0C78FD701CE60E4400592A97 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 0C78FD771CE60E4400592A97;
+			remoteInfo = avion;
+		};
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXCopyFilesBuildPhase section */
+		0C7AD1721CE7621700ABCD10 /* CopyFiles */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = /usr/share/man/man1/;
+			dstSubfolderSpec = 0;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 1;
+		};
+/* End PBXCopyFilesBuildPhase section */
+
+/* Begin PBXFileReference section */
+		0C1845F11CE60F7F0086CD99 /* avion_avfoundation.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = avion_avfoundation.mm; sourceTree = "<group>"; };
+		0C1845F31CE6108B0086CD99 /* AVFoundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = AVFoundation.framework; path = System/Library/Frameworks/AVFoundation.framework; sourceTree = SDKROOT; };
+		0C1845F61CE610B90086CD99 /* JavaVM.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = JavaVM.framework; path = System/Library/Frameworks/JavaVM.framework; sourceTree = SDKROOT; };
+		0C1845F81CE610EA0086CD99 /* JavaNativeFoundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = JavaNativeFoundation.framework; path = System/Library/Frameworks/JavaVM.framework/Frameworks/JavaNativeFoundation.framework; sourceTree = SDKROOT; };
+		0C1845FD1CE614460086CD99 /* CoreVideo.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreVideo.framework; path = System/Library/Frameworks/CoreVideo.framework; sourceTree = SDKROOT; };
+		0C1845FF1CE614520086CD99 /* CoreGraphics.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreGraphics.framework; path = System/Library/Frameworks/CoreGraphics.framework; sourceTree = SDKROOT; };
+		0C1846011CE6147B0086CD99 /* CoreMedia.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreMedia.framework; path = System/Library/Frameworks/CoreMedia.framework; sourceTree = SDKROOT; };
+		0C4A0FB41CE649D1000C8F02 /* ch_fhnw_ether_avion_Avion.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = ch_fhnw_ether_avion_Avion.h; sourceTree = "<group>"; };
+		0C78FD781CE60E4400592A97 /* libavion.dylib */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.dylib"; includeInIndex = 0; path = libavion.dylib; sourceTree = BUILT_PRODUCTS_DIR; };
+		0C78FD7B1CE60E4400592A97 /* avion.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = avion.hpp; sourceTree = "<group>"; };
+		0C7AD16D1CE761BC00ABCD10 /* avion_test.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; name = avion_test.mm; path = avion_test/avion_test.mm; sourceTree = "<group>"; };
+		0C7AD1741CE7621700ABCD10 /* avion_test */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = avion_test; sourceTree = BUILT_PRODUCTS_DIR; };
+		0C96A9DD1CE9B66600CF5D26 /* audio_buffer.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = audio_buffer.hpp; sourceTree = "<group>"; };
+		0CBA055D1CE73169002D012B /* avion_jni.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = avion_jni.mm; sourceTree = "<group>"; };
+		0CF3EC881CEDC3DB00AEFE0D /* Cocoa.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Cocoa.framework; path = System/Library/Frameworks/Cocoa.framework; sourceTree = SDKROOT; };
+		0CFBAB3E1CF2D9ED00BEB939 /* Avion.java */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.java; name = Avion.java; path = ../src/main/java/ch/fhnw/ether/avion/Avion.java; sourceTree = "<group>"; };
+/* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		0C78FD751CE60E4400592A97 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				0C1845F41CE6108B0086CD99 /* AVFoundation.framework in Frameworks */,
+				0C1846021CE6147B0086CD99 /* CoreMedia.framework in Frameworks */,
+				0C1845FE1CE614460086CD99 /* CoreVideo.framework in Frameworks */,
+				0CF3EC871CEDBC6600AEFE0D /* JavaNativeFoundation.framework in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		0C7AD1711CE7621700ABCD10 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				0CF3EC8A1CEDCD2100AEFE0D /* libavion.dylib in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		0C1845F51CE610960086CD99 /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+				0CF3EC881CEDC3DB00AEFE0D /* Cocoa.framework */,
+				0C1845F31CE6108B0086CD99 /* AVFoundation.framework */,
+				0C1846011CE6147B0086CD99 /* CoreMedia.framework */,
+				0C1845FF1CE614520086CD99 /* CoreGraphics.framework */,
+				0C1845FD1CE614460086CD99 /* CoreVideo.framework */,
+				0C1845F81CE610EA0086CD99 /* JavaNativeFoundation.framework */,
+				0C1845F61CE610B90086CD99 /* JavaVM.framework */,
+			);
+			name = Frameworks;
+			sourceTree = "<group>";
+		};
+		0C78FD6F1CE60E4400592A97 = {
+			isa = PBXGroup;
+			children = (
+				0CBA05611CE733CF002D012B /* JNI API */,
+				0C78FD7A1CE60E4400592A97 /* Source */,
+				0C7AD16F1CE761C200ABCD10 /* Test */,
+				0C78FD791CE60E4400592A97 /* Products */,
+				0C1845F51CE610960086CD99 /* Frameworks */,
+			);
+			sourceTree = "<group>";
+		};
+		0C78FD791CE60E4400592A97 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				0C78FD781CE60E4400592A97 /* libavion.dylib */,
+				0C7AD1741CE7621700ABCD10 /* avion_test */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		0C78FD7A1CE60E4400592A97 /* Source */ = {
+			isa = PBXGroup;
+			children = (
+				0C96A9DD1CE9B66600CF5D26 /* audio_buffer.hpp */,
+				0C78FD7B1CE60E4400592A97 /* avion.hpp */,
+				0C1845F11CE60F7F0086CD99 /* avion_avfoundation.mm */,
+				0CBA055D1CE73169002D012B /* avion_jni.mm */,
+				0C4A0FB41CE649D1000C8F02 /* ch_fhnw_ether_avion_Avion.h */,
+			);
+			name = Source;
+			path = avion;
+			sourceTree = "<group>";
+		};
+		0C7AD16F1CE761C200ABCD10 /* Test */ = {
+			isa = PBXGroup;
+			children = (
+				0C7AD16D1CE761BC00ABCD10 /* avion_test.mm */,
+			);
+			name = Test;
+			sourceTree = "<group>";
+		};
+		0CBA05611CE733CF002D012B /* JNI API */ = {
+			isa = PBXGroup;
+			children = (
+				0CFBAB3E1CF2D9ED00BEB939 /* Avion.java */,
+			);
+			name = "JNI API";
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXHeadersBuildPhase section */
+		0C78FD761CE60E4400592A97 /* Headers */ = {
+			isa = PBXHeadersBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				0C96A9DE1CE9B66600CF5D26 /* audio_buffer.hpp in Headers */,
+				0C78FD7C1CE60E4400592A97 /* avion.hpp in Headers */,
+				0C4A0FB51CE649D1000C8F02 /* ch_fhnw_ether_avion_Avion.h in Headers */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXHeadersBuildPhase section */
+
+/* Begin PBXNativeTarget section */
+		0C78FD771CE60E4400592A97 /* avion */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 0C78FD831CE60E4400592A97 /* Build configuration list for PBXNativeTarget "avion" */;
+			buildPhases = (
+				0C1845FA1CE611520086CD99 /* ShellScript */,
+				0C78FD741CE60E4400592A97 /* Sources */,
+				0C78FD751CE60E4400592A97 /* Frameworks */,
+				0C78FD761CE60E4400592A97 /* Headers */,
+				0C1845FB1CE611810086CD99 /* ShellScript */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = avion;
+			productName = avion;
+			productReference = 0C78FD781CE60E4400592A97 /* libavion.dylib */;
+			productType = "com.apple.product-type.library.dynamic";
+		};
+		0C7AD1731CE7621700ABCD10 /* avion_test */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 0C7AD1781CE7621700ABCD10 /* Build configuration list for PBXNativeTarget "avion_test" */;
+			buildPhases = (
+				0C7AD1701CE7621700ABCD10 /* Sources */,
+				0C7AD1711CE7621700ABCD10 /* Frameworks */,
+				0C7AD1721CE7621700ABCD10 /* CopyFiles */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				0CF3EC8C1CEDCD9F00AEFE0D /* PBXTargetDependency */,
+			);
+			name = avion_test;
+			productName = avion_test;
+			productReference = 0C7AD1741CE7621700ABCD10 /* avion_test */;
+			productType = "com.apple.product-type.tool";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		0C78FD701CE60E4400592A97 /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				LastUpgradeCheck = 0730;
+				ORGANIZATIONNAME = "FHNW / Stefan Arisona";
+				TargetAttributes = {
+					0C78FD771CE60E4400592A97 = {
+						CreatedOnToolsVersion = 7.3;
+					};
+					0C7AD1731CE7621700ABCD10 = {
+						CreatedOnToolsVersion = 7.3;
+					};
+				};
+			};
+			buildConfigurationList = 0C78FD731CE60E4400592A97 /* Build configuration list for PBXProject "avion" */;
+			compatibilityVersion = "Xcode 3.2";
+			developmentRegion = English;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				en,
+			);
+			mainGroup = 0C78FD6F1CE60E4400592A97;
+			productRefGroup = 0C78FD791CE60E4400592A97 /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				0C78FD771CE60E4400592A97 /* avion */,
+				0C7AD1731CE7621700ABCD10 /* avion_test */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXShellScriptBuildPhase section */
+		0C1845FA1CE611520086CD99 /* ShellScript */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputPaths = (
+			);
+			outputPaths = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "echo $SRCROOT\njavah -classpath $SRCROOT/../src/main/java -d $SRCROOT/avion ch.fhnw.ether.avion.Avion";
+		};
+		0C1845FB1CE611810086CD99 /* ShellScript */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputPaths = (
+			);
+			outputPaths = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "echo $BUILT_PRODUCTS_DIR\necho $PRODUCT_NAME\ncp $BUILT_PRODUCTS_DIR/lib$PRODUCT_NAME.dylib $SRCROOT/../libs/";
+		};
+/* End PBXShellScriptBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		0C78FD741CE60E4400592A97 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				0C1845F21CE60F7F0086CD99 /* avion_avfoundation.mm in Sources */,
+				0CBA055E1CE73169002D012B /* avion_jni.mm in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		0C7AD1701CE7621700ABCD10 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				0C7AD17B1CE7623200ABCD10 /* avion_test.mm in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		0CF3EC8C1CEDCD9F00AEFE0D /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 0C78FD771CE60E4400592A97 /* avion */;
+			targetProxy = 0CF3EC8B1CEDCD9F00AEFE0D /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
+
+/* Begin XCBuildConfiguration section */
+		0C78FD811CE60E4400592A97 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CLANG_CXX_LANGUAGE_STANDARD = "c++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				FRAMEWORK_SEARCH_PATHS = /System/Library/Frameworks/JavaVM.framework/Frameworks;
+				HEADER_SEARCH_PATHS = /System/Library/Frameworks/JavaVM.framework/Headers;
+				OTHER_CFLAGS = "-Wall";
+				SDKROOT = macosx;
+			};
+			name = Debug;
+		};
+		0C78FD821CE60E4400592A97 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CLANG_CXX_LANGUAGE_STANDARD = "c++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				FRAMEWORK_SEARCH_PATHS = /System/Library/Frameworks/JavaVM.framework/Frameworks;
+				HEADER_SEARCH_PATHS = /System/Library/Frameworks/JavaVM.framework/Headers;
+				OTHER_CFLAGS = "-Wall";
+				SDKROOT = macosx;
+			};
+			name = Release;
+		};
+		0C78FD841CE60E4400592A97 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				DYLIB_COMPATIBILITY_VERSION = 1;
+				DYLIB_CURRENT_VERSION = 1;
+				EXECUTABLE_PREFIX = lib;
+				FRAMEWORK_SEARCH_PATHS = (
+					"$(inherited)",
+					"$(SDKROOT)$(SYSTEM_LIBRARY_DIR)/Frameworks/JavaVM.framework/Frameworks",
+				);
+				GCC_ENABLE_CPP_EXCEPTIONS = YES;
+				GCC_ENABLE_CPP_RTTI = YES;
+				GCC_INLINES_ARE_PRIVATE_EXTERN = NO;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+			};
+			name = Debug;
+		};
+		0C78FD851CE60E4400592A97 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				DYLIB_COMPATIBILITY_VERSION = 1;
+				DYLIB_CURRENT_VERSION = 1;
+				EXECUTABLE_PREFIX = lib;
+				FRAMEWORK_SEARCH_PATHS = (
+					"$(inherited)",
+					"$(SDKROOT)$(SYSTEM_LIBRARY_DIR)/Frameworks/JavaVM.framework/Frameworks",
+				);
+				GCC_ENABLE_CPP_EXCEPTIONS = YES;
+				GCC_ENABLE_CPP_RTTI = YES;
+				GCC_INLINES_ARE_PRIVATE_EXTERN = NO;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+			};
+			name = Release;
+		};
+		0C7AD1791CE7621700ABCD10 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				PRODUCT_NAME = "$(TARGET_NAME)";
+			};
+			name = Debug;
+		};
+		0C7AD17A1CE7621700ABCD10 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				PRODUCT_NAME = "$(TARGET_NAME)";
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		0C78FD731CE60E4400592A97 /* Build configuration list for PBXProject "avion" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				0C78FD811CE60E4400592A97 /* Debug */,
+				0C78FD821CE60E4400592A97 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		0C78FD831CE60E4400592A97 /* Build configuration list for PBXNativeTarget "avion" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				0C78FD841CE60E4400592A97 /* Debug */,
+				0C78FD851CE60E4400592A97 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		0C7AD1781CE7621700ABCD10 /* Build configuration list for PBXNativeTarget "avion_test" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				0C7AD1791CE7621700ABCD10 /* Debug */,
+				0C7AD17A1CE7621700ABCD10 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = 0C78FD701CE60E4400592A97 /* Project object */;
+}

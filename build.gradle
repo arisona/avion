@@ -1,0 +1,21 @@
+apply plugin: 'java'
+apply plugin: 'eclipse'
+apply plugin: 'idea'
+
+repositories {
+    mavenCentral()
+    jcenter()
+    maven { url "https://oss.sonatype.org/content/repositories/snapshots" }
+}
+
+//project.ext.lwjglVersion = "3.0.0b"
+project.ext.lwjglVersion = "3.0.0-SNAPSHOT"
+
+dependencies {
+    compile "org.lwjgl:lwjgl:$lwjglVersion"
+    compile "org.lwjgl:lwjgl-platform:$lwjglVersion:natives-windows"
+    compile "org.lwjgl:lwjgl-platform:$lwjglVersion:natives-linux"
+    compile "org.lwjgl:lwjgl-platform:$lwjglVersion:natives-osx"
+
+    //testCompile 'junit:junit:4.12'
+}
