@@ -29,7 +29,7 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-package ch.fhnw.ether.avion.example;
+package ch.fhnw.ether.avion.test;
 
 import java.io.IOException;
 import java.net.URL;
