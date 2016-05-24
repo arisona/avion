@@ -33,8 +33,16 @@ package ch.fhnw.ether.avion;
 
 import java.net.URL;
 import java.nio.ByteBuffer;
+import java.util.concurrent.locks.ReadWriteLock;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 public final class AVDecoder {
+	
+	public static final int NO_ERROR = 0;
+	public static final int END_OF_STREAM = -1;
+	public static final int NO_SUCH_STREAM = -2;
+	public static final int INTERNAL_ERROR = -3;
+	public static final int DECODER_DISPOSED = -4;
 	
 	public enum AudioEncoding {
 		PCM_16_SIGNED,
@@ -71,14 +79,17 @@ public final class AVDecoder {
 	}
 	
 	
-	private long nativeHandle;
+	private volatile long nativeHandle;
+	private final ReadWriteLock lock = new ReentrantReadWriteLock();
 
 	private final URL url;
+	private final boolean hasAudio;
+	private final boolean hasVideo;
 	private final double duration;
 	private final double videoFrameRate;
 	private final int videoWidth;
 	private final int videoHeight;
-
+	
 	AVDecoder(URL url, AudioFormat audioFormat, VideoFormat videoFormat) {
 		this.url = url;
 
@@ -95,6 +106,8 @@ public final class AVDecoder {
 		if (nativeHandle == 0)
 			throw new IllegalArgumentException("cannot create av decoder from " + url);
 
+		hasAudio = Avion.decoderHasAudio(nativeHandle);
+		hasVideo = Avion.decoderHasVideo(nativeHandle);
 		duration = Avion.decoderGetDuration(nativeHandle);
 		videoFrameRate = Avion.decoderGetVideoFrameRate(nativeHandle);
 		videoWidth = Avion.decoderGetVideoWidth(nativeHandle);
@@ -102,20 +115,31 @@ public final class AVDecoder {
 	}
 
 	public void dispose() {
-		Avion.decoderDispose(nativeHandle);
-		nativeHandle = 0;
+		lock.writeLock().lock();
+		try {
+			Avion.decoderDispose(nativeHandle);
+		} finally {
+			nativeHandle = 0;
+			lock.writeLock().unlock();
+		}
 	}
 
 	public void setRange(double start, double end) {
-		Avion.decoderSetRange(nativeHandle, start, end);
+		lock.writeLock().lock();
+		try {
+			if (nativeHandle != 0)
+				Avion.decoderSetRange(nativeHandle, start, end);
+		} finally {
+			lock.writeLock().unlock();
+		}
 	}
 	
 	public boolean hasAudio() {
-		return Avion.decoderHasAudio(nativeHandle);
+		return hasAudio;
 	}
 	
 	public boolean hasVideo() {
-		return Avion.decoderHasVideo(nativeHandle);
+		return hasVideo;
 	}
 
 	public URL getURL() {
@@ -139,11 +163,25 @@ public final class AVDecoder {
 	}
 
 	public int decodeAudio(ByteBuffer buffer, double[] pts) {
-		return Avion.decoderDecodeAudio(nativeHandle, buffer, pts);
+		lock.readLock().lock();
+		try {
+			if (nativeHandle == 0)
+				return DECODER_DISPOSED;
+			return Avion.decoderDecodeAudio(nativeHandle, buffer, pts);
+		} finally {
+			lock.readLock().unlock();
+		}
 	}
 
 	public int decodeVideo(ByteBuffer buffer, double[] pts) {
-		return Avion.decoderDecodeVideo(nativeHandle, buffer, pts);
+		lock.readLock().lock();
+		try {
+			if (nativeHandle == 0)
+				return DECODER_DISPOSED;
+			return Avion.decoderDecodeVideo(nativeHandle, buffer, pts);
+		} finally {
+			lock.readLock().unlock();
+		}
 	}
 
 	@Override
