@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 2013 - 2016 Stefan Muller Arisona, Simon Schubiger
- * Copyright (c) 2013 - 2016 FHNW & ETH Zurich
+ * Copyright (c) 2013 - 2016 FHNW
  * All rights reserved.
  *
  * Contributions by: Filip Schramka, Samuel von Stachelski
@@ -47,6 +47,8 @@ public final class AvionDecoderTest {
 	public static void main(String[] args) {
 		try {
 			System.out.println("avion test flight: " + Avion.isReady());
+			
+			//extractFile("avion", null);
 	
 	        int audioSize = 1024;
 	        

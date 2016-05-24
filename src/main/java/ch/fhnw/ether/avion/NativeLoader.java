@@ -31,60 +31,47 @@
 
 package ch.fhnw.ether.avion;
 
-import java.net.URL;
-import java.nio.ByteBuffer;
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
 
-import ch.fhnw.ether.avion.AVDecoder.AudioFormat;
-import ch.fhnw.ether.avion.AVDecoder.VideoFormat;
+public final class NativeLoader {
+	private static final int BUFFER_SIZE = 8192;
 
-public final class Avion {
-
-	private static boolean READY = true;
-
-	static {
+	public static void load(String library) throws UnsatisfiedLinkError {
 		try {
-			NativeLoader.load("avion");
-		} catch (Throwable t) {
-			READY = false;
+			System.loadLibrary(library);
+		} catch (UnsatisfiedLinkError e) {
+			try {
+				String libraryName = System.mapLibraryName(library);
+
+				String[] split = libraryName.split("\\.", 2);
+				String libraryPrefix = split[0];
+				String librarySuffix = (split.length > 1) ? "." + split[split.length - 1] : null;
+
+				File file = File.createTempFile(libraryPrefix, librarySuffix);
+				file.deleteOnExit();
+				
+				if (!file.exists())
+					throw new FileNotFoundException("file " + file.getAbsolutePath() + " does not exist");
+				
+				try (InputStream is = NativeLoader.class.getResourceAsStream("/" + libraryName); OutputStream os = new FileOutputStream(file)) {
+					byte[] buffer = new byte[BUFFER_SIZE];
+					int read = 0;
+		            while ((read = is.read(buffer)) != -1) {
+		                os.write(buffer, 0, read);
+		            }			
+				} catch (Throwable t) {
+					throw new IOException("can't copy library to " + file.getAbsolutePath());
+				}
+				//System.out.println("extracted library to " + file.getAbsolutePath());
+				System.load(file.getAbsolutePath());
+			} catch (Throwable t) {
+				throw e;
+			}
 		}
 	}
-
-	public static boolean isReady() {
-		return READY;
-	}
-
-	private Avion() {
-	}
-	
-	public static AVDecoder createDecoder(URL url, AudioFormat audioFormat, VideoFormat videoFormat) {
-		return new AVDecoder(url, audioFormat, videoFormat);
-	}
-	
-	public static AVEncoder createEncoder(String path) {
-		return new AVEncoder(path);
-	}
-
-	static native long decoderCreate(String url, 
-			boolean audioDecode, int audioEncoding, double audioSampleRate, int audioBufferSize, boolean audioInterleaved,
-			boolean videoDecode, int videoFormat, boolean videoFlip);
-    
-	static native void decoderDispose(long nativeHandle);
-
-    static native void decoderSetRange(long nativeHandle, double start, double end);
-
-    static native boolean decoderHasAudio(long nativeHandle);
-
-    static native boolean decoderHasVideo(long nativeHandle);
-    
-    static native double decoderGetDuration(long nativeHandle);
-
-	static native double decoderGetVideoFrameRate(long nativeHandle);
-
-	static native int decoderGetVideoWidth(long nativeHandle);
-
-	static native int decoderGetVideoHeight(long nativeHandle);
-
-	static native int decoderDecodeAudio(long nativeHandle, ByteBuffer buffer, double[] pts);
-
-	static native int decoderDecodeVideo(long nativeHandle, ByteBuffer buffer, double[] pts);
 }
