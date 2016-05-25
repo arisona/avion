@@ -17,6 +17,11 @@ A typical application example is to decode video files, and use the video frames
 ## TODO
 
 - API finalization
-- Windows and Linux support (Windows media foundation, ffmpeg)
+- Windows and Linux support (Microsoft Media Foundation, ffmpeg)
 - Video capture support
 - Encoding support
+
+
+## RFC
+
+In order to finalize the API, requests for changes, features, etc. are welcome. Also, if someone is experienced with Microsoft Media Foundation and would like to start hacking, please be in touch, or fork and I'll be happy to pull.
