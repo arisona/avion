@@ -35,14 +35,6 @@
 #import "avion.hpp"
 
 #include "audio_buffer.hpp"
-/*
-static uint32_t BGRA2RGBA(uint32_t value) {
-    return (value & 0xff000000) >> 16 |
-           (value & 0x00ff0000) |
-           (value & 0x0000ff00) << 16 |
-           (value & 0x000000ff);
-}
-*/
 
 static uint32_t BGRA2RGBA(uint32_t value) {
     return
@@ -50,17 +42,10 @@ static uint32_t BGRA2RGBA(uint32_t value) {
     (value & 0x0000ff00) |
     (value & 0x000000ff) << 16 |
     (value & 0xff000000);
-//    (value & 0xff000000) >> 16 |
-//    (value & 0x00ff0000) |
-//    (value & 0x0000ff00) << 16 |
-//    (value & 0x000000ff);
 }
 
 // TODO:
-// - flip image vertically, optimise pixel transfer
-// - audio buffer size & sample rate request support
-// - complete audio
-// - API: replace seek with range (start + end time)?
+// - BGRA support, optimize pixel transfer
 
 class AVAssetDecoder : public AvionDecoder {
 private:
