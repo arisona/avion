@@ -38,10 +38,10 @@
 
 class Avion {
 public:
-    const int NO_ERROR = 0;
-    const int END_OF_STREAM = -1;
-    const int NO_SUCH_STREAM = -2;
-    const int INTERNAL_ERROR = -3;
+    static const int NO_ERROR = 0;
+    static const int END_OF_STREAM = -1;
+    static const int NO_SUCH_STREAM = -2;
+    static const int INTERNAL_ERROR = -3;
 };
 
 class AvionDecoder : public Avion {

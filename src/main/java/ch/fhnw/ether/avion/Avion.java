@@ -43,8 +43,9 @@ public final class Avion {
 
 	static {
 		try {
-			NativeLoader.load("avion");
+			NativeLoader.load("avion-darwin");
 		} catch (Throwable t) {
+			t.printStackTrace();
 			READY = false;
 		}
 	}
