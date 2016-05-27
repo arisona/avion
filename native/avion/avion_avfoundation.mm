@@ -35,14 +35,6 @@
 #import "avion.hpp"
 
 #include "audio_buffer.hpp"
-/*
-static uint32_t BGRA2RGBA(uint32_t value) {
-    return (value & 0xff000000) >> 16 |
-           (value & 0x00ff0000) |
-           (value & 0x0000ff00) << 16 |
-           (value & 0x000000ff);
-}
-*/
 
 static uint32_t BGRA2RGBA(uint32_t value) {
     return
@@ -50,17 +42,23 @@ static uint32_t BGRA2RGBA(uint32_t value) {
     (value & 0x0000ff00) |
     (value & 0x000000ff) << 16 |
     (value & 0xff000000);
-//    (value & 0xff000000) >> 16 |
-//    (value & 0x00ff0000) |
-//    (value & 0x0000ff00) << 16 |
-//    (value & 0x000000ff);
 }
 
+class AutoReleasePool {
+    NSAutoreleasePool* pool;
+public:
+    AutoReleasePool() {
+        pool = [[NSAutoreleasePool alloc] init];
+    }
+    
+    ~AutoReleasePool() {
+        [pool release];
+    }
+};
+
 // TODO:
-// - flip image vertically, optimise pixel transfer
-// - audio buffer size & sample rate request support
-// - complete audio
-// - API: replace seek with range (start + end time)?
+// - flip / no flip image vertically, optimise pixel transfer
+// - RGBA / BGRA support
 
 class AVAssetDecoder : public AvionDecoder {
 private:
@@ -85,6 +83,8 @@ private:
     
 public:
     AVAssetDecoder(std::string url, AudioFormat audioFormat, VideoFormat videoFormat) : url(url), audioFormat(audioFormat), videoFormat(videoFormat), audioQueue(audioFormat.sampleRate) {
+
+        AutoReleasePool pool;
         
         NSURL* nsUrl = [NSURL URLWithString:[NSString stringWithCString:url.c_str() encoding:NSUTF8StringEncoding]];
         if (!nsUrl) {
@@ -131,6 +131,9 @@ public:
     }
     
     virtual ~AVAssetDecoder() {
+
+        AutoReleasePool pool;
+
         if (audioReader)
             [audioReader release];
         if (videoReader)
@@ -138,6 +141,9 @@ public:
     }
     
     void setRange(double start, double end = std::numeric_limits<double>::infinity()) {
+        
+        AutoReleasePool pool;
+        
         NSError* error = nil;
         CMTimeRange timeRange = CMTimeRangeMake(CMTimeMakeWithSeconds(start, 1), end == std::numeric_limits<double>::infinity() ? kCMTimePositiveInfinity : CMTimeMakeWithSeconds(end, 1));
         
@@ -227,6 +233,9 @@ public:
     }
 
     int decodeAudio(uint8_t* buffer, double& pts) {
+        
+        AutoReleasePool pool;
+        
         if (!audioReader)
             return NO_SUCH_STREAM;
         
@@ -277,6 +286,9 @@ public:
     }
 
     int decodeVideo(uint8_t* buffer, double& pts) {
+        
+        AutoReleasePool pool;
+        
         if (!videoReader)
             return NO_SUCH_STREAM;
         

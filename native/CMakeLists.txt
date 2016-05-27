@@ -53,8 +53,10 @@ include_directories(${PROJECT_SOURCE_DIR}/avion)
 # Add avion library
 add_library(avion
   SHARED
-  ${PROJECT_SOURCE_DIR}/avion/avion_jni.mm
+  ${PROJECT_SOURCE_DIR}/avion/avion_jni.cpp
   ${PROJECT_SOURCE_DIR}/avion/avion_avfoundation.mm
+  ${PROJECT_SOURCE_DIR}/avion/avion.hpp
+  ${PROJECT_SOURCE_DIR}/avion/audio_buffer.hpp
 )
 add_dependencies(avion javah)
 target_link_libraries(avion ${EXTRA_LIBS})
