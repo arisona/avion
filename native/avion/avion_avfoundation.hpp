@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 2013 - 2016 Stefan Muller Arisona, Simon Schubiger
- * Copyright (c) 2013 - 2016 FHNW & ETH Zurich
+ * Copyright (c) 2013 - 2016 FHNW
  * All rights reserved.
  *
  * Contributions by: Filip Schramka, Samuel von Stachelski
@@ -13,9 +13,9 @@
  *  Redistributions in binary form must reproduce the above copyright notice,
  *   this list of conditions and the following disclaimer in the documentation
  *   and/or other materials provided with the distribution.
- *  Neither the name of FHNW / ETH Zurich nor the names of its contributors may
- *   be used to endorse or promote products derived from this software without
- *   specific prior written permission.
+ *  Neither the name of FHNW nor the names of its contributors may be used to
+ *   endorse or promote products derived from this software without specific
+ *   prior written permission.
  *
  * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
  * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
@@ -29,11 +29,12 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+#pragma once
+
 #import <Foundation/Foundation.h>
 #import <AVFoundation/AVFoundation.h>
 
-#import "avion.hpp"
-
+#include "avion.hpp"
 #include "audio_buffer.hpp"
 
 static uint32_t BGRA2RGBA(uint32_t value) {
@@ -336,7 +337,3 @@ public:
         return NO_ERROR;
     }
 };
-
-AvionDecoder* AvionDecoder::create(std::string url, AudioFormat audioFormat, VideoFormat videoFormat) {
-    return new AVAssetDecoder(url, audioFormat, videoFormat);
-}
