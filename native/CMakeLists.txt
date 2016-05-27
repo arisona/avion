@@ -42,10 +42,12 @@ if (APPLE)
     JAVAVM_LIBRARY
   )
 elseif (WIN32)
-
+  set(PLATFORM_LIBS "")
 elseif (UNIX)
-
+  set(PLATFORM_LIBS "")
 endif()
+
+message (STATUS "PLATFORM_LIBS=${PLATFORM_LIBS}")
 
 
 ######## Add JNI / Javah target
@@ -65,17 +67,37 @@ if (${FFMPEG_ENABLED} OR UNIX)
   set(FFMPEG_ROOT "/Users/radar/devel/lib/ffmpeg" CACHE FILEPATH "FFMPEG root directory")
   include_directories(${FFMPEG_ROOT}/include)
   find_library(AVCODEC_LIBRARY avcodec PATHS ${FFMPEG_ROOT}/lib)
+  find_library(AVDEVICE_LIBRARY avdevice PATHS ${FFMPEG_ROOT}/lib)
+  find_library(AVFORMAT_LIBRARY avformat PATHS ${FFMPEG_ROOT}/lib)
+  find_library(AVUTIL_LIBRARY avutil PATHS ${FFMPEG_ROOT}/lib)
+  find_library(SWRESAMPLE_LIBRARY swresample PATHS ${FFMPEG_ROOT}/lib)
+  find_library(SWSCALELIBRARY swscale PATHS ${FFMPEG_ROOT}/lib)
   set(FFMPEG_LIBS
     ${AVCODEC_LIBRARY}
+    ${AVDEVICE_LIBRARY}
+    ${AVFORMAT_LIBRARY}
+    ${AVUTIL_LIBRARY}
+    ${SWRESAMPLE_LIBRARY}
+    ${SWSCALE_LIBRARY}
   )
   mark_as_advanced(FORCE
     AVCODEC_LIBRARY
+    AVDEVICE_LIBRARY
+    AVFORMAT_LIBRARY
+    AVUTIL_LIBRARY
+    SWRESAMPLE_LIBRARY
+    SWSCALE_LIBRARY
   )
-  set(PLATFORM_LIBS "${PLATFORM_LIBS};${FFMPEG_LIBS}")
+  set(FFMPEG_SOURCES ${PROJECT_SOURCE_DIR}/avion/avion_ffmpeg.hpp)
+  set(FFMPEG_LIBS ${FFMPEG_LIBS})
   add_definitions("-DFFMPEG_ENABLED")
+else()
+  set(FFMPEG_SOURCES "")
+  set(FFMPEG_LIBS "")
 endif()
 
-message (STATUS "PLATFORM_LIBS=${PLATFORM_LIBS}")
+message (STATUS "FFMPEG_LIBS=${FFMPEG_LIBS}")
+
 
 ######## Add avion include location
 include_directories(${PROJECT_SOURCE_DIR}/avion)
@@ -95,7 +117,6 @@ elseif (WIN32)
 elseif (UNIX)
   set(PLATFORM_SOURCES
     ${PROJECT_SOURCE_DIR}/avion/avion.cpp
-    ${PROJECT_SOURCE_DIR}/avion/avion_ffmpeg.hpp
   )
 endif()
 
@@ -105,16 +126,17 @@ add_library(avion
   ${PROJECT_SOURCE_DIR}/avion/audio_buffer.hpp
   ${PROJECT_SOURCE_DIR}/avion/avion_jni.cpp
   ${PLATFORM_SOURCES}
+  ${FFMPEG_SOURCES}
 )
 add_dependencies(avion javah)
-target_link_libraries(avion ${PLATFORM_LIBS})
+target_link_libraries(avion ${PLATFORM_LIBS} ${FFMPEG_LIBS})
 
 if (APPLE)
   set_target_properties(avion PROPERTIES OUTPUT_NAME avion-macos)
 elseif (WIN32)
-  set_target_properties(avion PROPERTIES OUTPUT_NAME avion-windows)
+  set_target_properties(avion PROPERTIES OUTPUT_NAME avion-windows-64bit)
 elseif (UNIX)
-  set_target_properties(avion PROPERTIES OUTPUT_NAME avion-linux)
+  set_target_properties(avion PROPERTIES OUTPUT_NAME avion-linux-64bit)
 endif()
 
 
