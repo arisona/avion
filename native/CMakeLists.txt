@@ -64,7 +64,8 @@ file(MAKE_DIRECTORY ${PROJECT_SOURCE_DIR}/generated)
 option(FFMPEG_ENABLED "FFMPEG enabled" ON)
 if (${FFMPEG_ENABLED} OR UNIX)
   #set(FFMPEG_ROOT "/usr" CACHE FILEPATH "FFMPEG root directory")
-  set(FFMPEG_ROOT "/Users/radar/devel/lib/ffmpeg" CACHE FILEPATH "FFMPEG root directory")
+  #set(FFMPEG_ROOT "/Users/radar/devel/lib/ffmpeg" CACHE FILEPATH "FFMPEG root directory")
+  set(FFMPEG_ROOT "E:/win64/ffmpeg" CACHE FILEPATH "FFMPEG root directory")
   include_directories(${FFMPEG_ROOT}/include)
   find_library(AVCODEC_LIBRARY avcodec PATHS ${FFMPEG_ROOT}/lib)
   find_library(AVDEVICE_LIBRARY avdevice PATHS ${FFMPEG_ROOT}/lib)
@@ -149,8 +150,8 @@ target_link_libraries(avion_test avion)
 
 ######### Install avion library so it can be packaged by gradle build
 install(TARGETS avion
-  LIBRARY
-  DESTINATION ${PROJECT_SOURCE_DIR}/../libs
+#  LIBRARY
+  DESTINATION "${PROJECT_SOURCE_DIR}/../libs"
 )
 
 ######## Finally, set build type (for use with make)

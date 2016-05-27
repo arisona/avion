@@ -41,7 +41,7 @@ AvionDecoder* AvionDecoder::create(std::string url, AudioFormat audioFormat, Vid
 #elif _WIN32
 
 #include "avion_mediafoundation.hpp"
-AvionDecoder* AvionDecoder::create(std::string url, AudioFormat audioFormat, VideoFormat videoFormat) {
+DLLEXPORT AvionDecoder* AvionDecoder::create(std::string url, AudioFormat audioFormat, VideoFormat videoFormat) {
     return new MediaFoundationDecoder(url, audioFormat, videoFormat);
 }
 

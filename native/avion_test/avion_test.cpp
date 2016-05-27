@@ -44,7 +44,7 @@ int main(int argc, char *argv[]) {
     //wrapper->seek(60);
 
     size_t size = decoder->getVideoWidth() * decoder->getVideoHeight() * 4;
-    uint8_t image[size];
+    uint8_t* image = new uint8_t[size];
 
     uint8_t samples[audioSize];
 
@@ -58,6 +58,7 @@ int main(int argc, char *argv[]) {
         printf("got audio frame %f %d\n", pts, error);
     }
 
+    delete image;
     delete decoder;
 
     return 0;

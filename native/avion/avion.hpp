@@ -31,10 +31,16 @@
 
 #pragma once
 
-#define MSG(...) { printf(__VA_ARGS__); fflush(stdout); }
-
 #include <limits>
 #include <string>
+
+#define MSG(...) { printf(__VA_ARGS__); fflush(stdout); }
+
+#ifdef _WIN32
+#define DLLEXPORT __declspec(dllexport)
+#else
+#define DLLEXPORT
+#endif
 
 class Avion {
 public:
@@ -50,50 +56,50 @@ public:
         PCM_16_SIGNED,
         PCM_32_FLOAT,
     };
-    
+
     class AudioFormat {
     public:
         AudioFormat(bool decode, int encoding, double sampleRate, int bufferSize, bool interleaved) : decode(decode), encoding(static_cast<AudioEncoding>(encoding)), sampleRate(sampleRate), bufferSize(bufferSize), interleaved(interleaved) {}
-        
+
         const bool decode;
         const AudioEncoding encoding;
         const double sampleRate;
         const int bufferSize;
         const bool interleaved;
     };
-    
+
     enum VideoPixelFormat {
         RGBA,
         BGRA
     };
-    
+
     class VideoFormat {
     public:
         VideoFormat(bool decode, int pixelFormat, bool flip) : decode(decode), pixelFormat(static_cast<VideoPixelFormat>(pixelFormat)), flip(flip) {}
-        
+
         const bool decode;
         const VideoPixelFormat pixelFormat;
         const bool flip;
     };
-    
-    static AvionDecoder* create(std::string url, AudioFormat audioFormat, VideoFormat videoFormat);
-    
+
+    DLLEXPORT static AvionDecoder* create(std::string url, AudioFormat audioFormat, VideoFormat videoFormat);
+
     virtual ~AvionDecoder() {}
-    
+
     virtual void setRange(double start, double end = std::numeric_limits<double>::infinity()) = 0;
-    
+
     virtual bool hasAudio() = 0;
-    
+
     virtual bool hasVideo() = 0;
-    
+
     virtual double getDuration() = 0;
-    
+
     virtual double getVideoFrameRate() = 0;
-    
+
     virtual int getVideoWidth() = 0;
-    
+
     virtual int getVideoHeight() = 0;
-    
+
     virtual int decodeAudio(uint8_t* buffer, double& pts) = 0;
 
     virtual int decodeVideo(uint8_t* buffer, double& pts) = 0;

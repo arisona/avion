@@ -33,6 +33,7 @@
 
 #include <algorithm>
 #include <deque>
+#include <memory>
 #include <utility>
 
 template<typename T>
