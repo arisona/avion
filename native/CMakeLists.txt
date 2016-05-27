@@ -41,12 +41,11 @@ if (APPLE)
     COREVIDEO_LIBRARY
     JAVAVM_LIBRARY
   )
-elseif (WINDOWS)
+elseif (WIN32)
 
 elseif (UNIX)
 
 endif()
-message (STATUS "PLATFORM_LIBS=${PLATFORM_LIBS}")
 
 
 ######## Add JNI / Javah target
@@ -60,8 +59,23 @@ file(MAKE_DIRECTORY ${PROJECT_SOURCE_DIR}/generated)
 
 
 ######## Add ffmpeg
+option(FFMPEG_ENABLED "FFMPEG enabled" ON)
+if (${FFMPEG_ENABLED} OR UNIX)
+  #set(FFMPEG_ROOT "/usr" CACHE FILEPATH "FFMPEG root directory")
+  set(FFMPEG_ROOT "/Users/radar/devel/lib/ffmpeg" CACHE FILEPATH "FFMPEG root directory")
+  include_directories(${FFMPEG_ROOT}/include)
+  find_library(AVCODEC_LIBRARY avcodec PATHS ${FFMPEG_ROOT}/lib)
+  set(FFMPEG_LIBS
+    ${AVCODEC_LIBRARY}
+  )
+  mark_as_advanced(FORCE
+    AVCODEC_LIBRARY
+  )
+  set(PLATFORM_LIBS "${PLATFORM_LIBS};${FFMPEG_LIBS}")
+  add_definitions("-DFFMPEG_ENABLED")
+endif()
 
-
+message (STATUS "PLATFORM_LIBS=${PLATFORM_LIBS}")
 
 ######## Add avion include location
 include_directories(${PROJECT_SOURCE_DIR}/avion)
@@ -73,7 +87,7 @@ if (APPLE)
     ${PROJECT_SOURCE_DIR}/avion/avion.mm
     ${PROJECT_SOURCE_DIR}/avion/avion_avfoundation.hpp
   )
-elseif (WINDOWS)
+elseif (WIN32)
   set(PLATFORM_SOURCES
     ${PROJECT_SOURCE_DIR}/avion/avion.cpp
     ${PROJECT_SOURCE_DIR}/avion/avion_mediafoundation.hpp
@@ -97,7 +111,7 @@ target_link_libraries(avion ${PLATFORM_LIBS})
 
 if (APPLE)
   set_target_properties(avion PROPERTIES OUTPUT_NAME avion-macos)
-elseif (WINDOWS)
+elseif (WIN32)
   set_target_properties(avion PROPERTIES OUTPUT_NAME avion-windows)
 elseif (UNIX)
   set_target_properties(avion PROPERTIES OUTPUT_NAME avion-linux)
