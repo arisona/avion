@@ -22,17 +22,24 @@ include_directories("${JNI_INCLUDE_DIRS}")
 
 ######### Add library dependencies
 if (APPLE)
-  FIND_LIBRARY(FOUNDATION_LIBRARY Foundation)
-  FIND_LIBRARY(AVFOUNDATION_LIBRARY AVFoundation)
-  FIND_LIBRARY(COREMEDIA_LIBRARY CoreMedia)
-  FIND_LIBRARY(COREVIDEO_LIBRARY CoreVideo)
-  FIND_LIBRARY(JAVAVM_LIBRARY JavaVM)
-  SET(PLATFORM_LIBS
+  find_library(FOUNDATION_LIBRARY Foundation )
+  find_library(AVFOUNDATION_LIBRARY AVFoundation)
+  find_library(COREMEDIA_LIBRARY CoreMedia)
+  find_library(COREVIDEO_LIBRARY CoreVideo)
+  find_library(JAVAVM_LIBRARY JavaVM)
+  set(PLATFORM_LIBS
     ${FOUNDATION_LIBRARY}
     ${AVFOUNDATION_LIBRARY}
     ${COREMEDIA_LIBRARY}
     ${COREVIDEO_LIBRARY}
     ${JAVAVM_LIBRARY}
+  )
+  mark_as_advanced(FORCE
+    FOUNDATION_LIBRARY
+    AVFOUNDATION_LIBRARY
+    COREMEDIA_LIBRARY
+    COREVIDEO_LIBRARY
+    JAVAVM_LIBRARY
   )
 elseif (WINDOWS)
 
@@ -52,23 +59,27 @@ include_directories(${PROJECT_SOURCE_DIR}/generated)
 file(MAKE_DIRECTORY ${PROJECT_SOURCE_DIR}/generated)
 
 
+######## Add ffmpeg
+
+
+
 ######## Add avion include location
 include_directories(${PROJECT_SOURCE_DIR}/avion)
 
 
 ######## Add avion library sources
 if (APPLE)
-  SET(PLATFORM_SOURCES
+  set(PLATFORM_SOURCES
     ${PROJECT_SOURCE_DIR}/avion/avion.mm
     ${PROJECT_SOURCE_DIR}/avion/avion_avfoundation.hpp
   )
 elseif (WINDOWS)
-  SET(PLATFORM_SOURCES
+  set(PLATFORM_SOURCES
     ${PROJECT_SOURCE_DIR}/avion/avion.cpp
     ${PROJECT_SOURCE_DIR}/avion/avion_mediafoundation.hpp
   )
 elseif (UNIX)
-  SET(PLATFORM_SOURCES
+  set(PLATFORM_SOURCES
     ${PROJECT_SOURCE_DIR}/avion/avion.cpp
     ${PROJECT_SOURCE_DIR}/avion/avion_ffmpeg.hpp
   )
