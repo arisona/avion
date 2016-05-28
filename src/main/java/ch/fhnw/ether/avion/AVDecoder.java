@@ -38,11 +38,13 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 public final class AVDecoder {
 	
+	// keep this in sync with the native error codes
 	public static final int NO_ERROR = 0;
 	public static final int END_OF_STREAM = -1;
 	public static final int NO_SUCH_STREAM = -2;
-	public static final int INTERNAL_ERROR = -3;
-	public static final int DECODER_DISPOSED = -4;
+	public static final int UNSUPPORTED_OPERATION = -3;
+	public static final int INTERNAL_ERROR = -4;
+	public static final int DECODER_DISPOSED = -5;
 	
 	public enum AudioEncoding {
 		PCM_16_SIGNED,

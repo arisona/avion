@@ -29,6 +29,8 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <unistd.h>
+
 #include "avion.hpp"
 
 int main(int argc, char *argv[]) {
@@ -56,9 +58,11 @@ int main(int argc, char *argv[]) {
 
         error = decoder->decodeAudio(samples, pts);
         printf("got audio frame %f %d\n", pts, error);
+        
+        usleep(1000000);
     }
 
-    delete image;
+    delete[] image;
     delete decoder;
 
     return 0;

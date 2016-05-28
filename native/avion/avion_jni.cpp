@@ -61,11 +61,12 @@ JNIEXPORT void JNICALL Java_ch_fhnw_ether_avion_Avion_decoderDispose
     }
 }
 
-JNIEXPORT void JNICALL Java_ch_fhnw_ether_avion_Avion_decoderSetRange
+JNIEXPORT int JNICALL Java_ch_fhnw_ether_avion_Avion_decoderSetRange
 (JNIEnv * env, jclass, jlong nativeHandle, jdouble start, jdouble end) {
     try {
-        ((AvionDecoder*)nativeHandle)->setRange(start, end);
+        return ((AvionDecoder*)nativeHandle)->setRange(start, end);
     } catch (...) {
+        return Avion::INTERNAL_ERROR;
     }
 }
 

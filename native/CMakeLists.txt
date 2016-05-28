@@ -13,6 +13,12 @@ set(LIBRARY_OUTPUT_PATH ${CMAKE_BINARY_DIR})
 set(CMAKE_CXX_STANDARD 11)
 
 
+######## Set "LINUX" (to avoid ambiguity between APPLE and UNIX)
+if("${CMAKE_SYSTEM}" MATCHES "Linux")
+  set(LINUX true)
+endif()
+
+
 ######### Add java
 find_package(Java REQUIRED)
 find_package(JNI REQUIRED)
@@ -43,7 +49,7 @@ if (APPLE)
   )
 elseif (WIN32)
   set(PLATFORM_LIBS "")
-elseif (UNIX)
+elseif (LINUX)
   set(PLATFORM_LIBS "")
 endif()
 
@@ -51,18 +57,23 @@ message (STATUS "PLATFORM_LIBS=${PLATFORM_LIBS}")
 
 
 ######## Add JNI / Javah target
+add_custom_target(make_generated_directory ALL
+  COMMAND ${CMAKE_COMMAND} -E make_directory ${PROJECT_SOURCE_DIR}/generated)
+
 create_javah(TARGET javah
   CLASSES ch.fhnw.ether.avion.Avion
   CLASSPATH ${CMAKE_SOURCE_DIR}/../src/main/java
   OUTPUT_DIR ${CMAKE_SOURCE_DIR}/generated
+  DEPENDS make_generated_directory
 )
 include_directories(${PROJECT_SOURCE_DIR}/generated)
-file(MAKE_DIRECTORY ${PROJECT_SOURCE_DIR}/generated)
+# file(MAKE_DIRECTORY ${PROJECT_SOURCE_DIR}/generated)
+message(STATUS ${PROJECT_SOURCE_DIR}/generated)
 
 
 ######## Add ffmpeg
-option(FFMPEG_ENABLED "FFMPEG enabled" ON)
-if (${FFMPEG_ENABLED} OR UNIX)
+option(FFMPEG_ENABLED "FFMPEG enabled" OFF)
+if (FFMPEG_ENABLED OR LINUX)
   #set(FFMPEG_ROOT "/usr" CACHE FILEPATH "FFMPEG root directory")
   #set(FFMPEG_ROOT "/Users/radar/devel/lib/ffmpeg" CACHE FILEPATH "FFMPEG root directory")
   set(FFMPEG_ROOT "E:/win64/ffmpeg" CACHE FILEPATH "FFMPEG root directory")
@@ -72,7 +83,7 @@ if (${FFMPEG_ENABLED} OR UNIX)
   find_library(AVFORMAT_LIBRARY avformat PATHS ${FFMPEG_ROOT}/lib)
   find_library(AVUTIL_LIBRARY avutil PATHS ${FFMPEG_ROOT}/lib)
   find_library(SWRESAMPLE_LIBRARY swresample PATHS ${FFMPEG_ROOT}/lib)
-  find_library(SWSCALELIBRARY swscale PATHS ${FFMPEG_ROOT}/lib)
+  find_library(SWSCALE_LIBRARY swscale PATHS ${FFMPEG_ROOT}/lib)
   set(FFMPEG_LIBS
     ${AVCODEC_LIBRARY}
     ${AVDEVICE_LIBRARY}
@@ -115,7 +126,7 @@ elseif (WIN32)
     ${PROJECT_SOURCE_DIR}/avion/avion.cpp
     ${PROJECT_SOURCE_DIR}/avion/avion_mediafoundation.hpp
   )
-elseif (UNIX)
+elseif (LINUX)
   set(PLATFORM_SOURCES
     ${PROJECT_SOURCE_DIR}/avion/avion.cpp
   )
@@ -126,6 +137,7 @@ add_library(avion
   ${PROJECT_SOURCE_DIR}/avion/avion.hpp
   ${PROJECT_SOURCE_DIR}/avion/audio_buffer.hpp
   ${PROJECT_SOURCE_DIR}/avion/avion_jni.cpp
+  ${PROJECT_SOURCE_DIR}/generated/ch_fhnw_ether_avion_Avion.h
   ${PLATFORM_SOURCES}
   ${FFMPEG_SOURCES}
 )
@@ -136,7 +148,7 @@ if (APPLE)
   set_target_properties(avion PROPERTIES OUTPUT_NAME avion-macos)
 elseif (WIN32)
   set_target_properties(avion PROPERTIES OUTPUT_NAME avion-windows-64bit)
-elseif (UNIX)
+elseif (LINUX)
   set_target_properties(avion PROPERTIES OUTPUT_NAME avion-linux-64bit)
 endif()
 

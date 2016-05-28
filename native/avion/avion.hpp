@@ -47,7 +47,8 @@ public:
     static const int NO_ERROR = 0;
     static const int END_OF_STREAM = -1;
     static const int NO_SUCH_STREAM = -2;
-    static const int INTERNAL_ERROR = -3;
+    static const int UNSUPPORTED_OPERATION = -3;
+    static const int INTERNAL_ERROR = -4;
 };
 
 class AvionDecoder : public Avion {
@@ -56,37 +57,46 @@ public:
         PCM_16_SIGNED,
         PCM_32_FLOAT,
     };
-
+    
     class AudioFormat {
     public:
         AudioFormat(bool decode, int encoding, double sampleRate, int bufferSize, bool interleaved) : decode(decode), encoding(static_cast<AudioEncoding>(encoding)), sampleRate(sampleRate), bufferSize(bufferSize), interleaved(interleaved) {}
-
+        
         const bool decode;
         const AudioEncoding encoding;
         const double sampleRate;
         const int bufferSize;
         const bool interleaved;
     };
-
+    
     enum VideoPixelFormat {
         RGBA,
         BGRA
     };
-
+    
     class VideoFormat {
     public:
         VideoFormat(bool decode, int pixelFormat, bool flip) : decode(decode), pixelFormat(static_cast<VideoPixelFormat>(pixelFormat)), flip(flip) {}
-
+        
         const bool decode;
         const VideoPixelFormat pixelFormat;
         const bool flip;
     };
+    
+protected:
+    const std::string url;
+    const AudioFormat audioFormat;
+    const VideoFormat videoFormat;
+    
 
-    DLLEXPORT static AvionDecoder* create(std::string url, AudioFormat audioFormat, VideoFormat videoFormat);
+public:
+    DLLEXPORT static AvionDecoder* create(std::string url, const AudioFormat& audioFormat, const VideoFormat& videoFormat);
 
+    AvionDecoder(const std::string url, const AudioFormat& audioFormat, const VideoFormat& videoFormat) : url(url), audioFormat(audioFormat), videoFormat(videoFormat) {}
+    
     virtual ~AvionDecoder() {}
 
-    virtual void setRange(double start, double end = std::numeric_limits<double>::infinity()) = 0;
+    virtual int setRange(double start, double end = std::numeric_limits<double>::infinity()) = 0;
 
     virtual bool hasAudio() = 0;
 

@@ -42,46 +42,47 @@ private:
     VideoFormat videoFormat;
 
     AudioQueue<uint8_t> audioQueue;
-    
+
 public:
     FFMPEGDecoder(std::string url, AudioFormat audioFormat, VideoFormat videoFormat) : url(url), audioFormat(audioFormat), videoFormat(videoFormat), audioQueue(audioFormat.sampleRate) {
     }
-    
+
     virtual ~FFMPEGDecoder() {
     }
-    
-    void setRange(double start, double end = std::numeric_limits<double>::infinity()) {
+
+    int setRange(double start, double end = std::numeric_limits<double>::infinity()) {
+        return UNSUPPORTED_OPERATION;
     }
-    
+
     bool hasAudio() {
         return false;
     }
-    
+
     bool hasVideo() {
         return false;
     }
-    
+
     double getDuration() {
-        return 0;
+        return UNSUPPORTED_OPERATION;
     }
-    
+
     double getVideoFrameRate() {
-        return 0;
+        return UNSUPPORTED_OPERATION;
     }
-    
+
     int getVideoWidth() {
-        return 0;
+        return UNSUPPORTED_OPERATION;
     }
-    
+
     int getVideoHeight() {
-        return 0;
+        return UNSUPPORTED_OPERATION;
     }
 
     int decodeAudio(uint8_t* buffer, double& pts) {
-        return 0;
+        return UNSUPPORTED_OPERATION;
     }
 
     int decodeVideo(uint8_t* buffer, double& pts) {
-        return NO_ERROR;
+        return UNSUPPORTED_OPERATION;
     }
 };
