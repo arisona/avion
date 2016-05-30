@@ -135,7 +135,7 @@ endif()
 add_library(avion
   SHARED
   ${PROJECT_SOURCE_DIR}/avion/avion.hpp
-  ${PROJECT_SOURCE_DIR}/avion/audio_buffer.hpp
+  ${PROJECT_SOURCE_DIR}/avion/util.hpp
   ${PROJECT_SOURCE_DIR}/avion/avion_jni.cpp
   ${PROJECT_SOURCE_DIR}/generated/ch_fhnw_ether_avion_Avion.h
   ${PLATFORM_SOURCES}

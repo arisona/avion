@@ -42,9 +42,14 @@
 #elif __APPLE__
 
 #include "avion_avfoundation.hpp"
+
+namespace Avion {
+
 AvionDecoder* AvionDecoder::create(std::string url, const AudioFormat& audioFormat, const VideoFormat& videoFormat) {
-    //return new AVAssetDecoder(url, audioFormat, videoFormat);
-    return new AVCaptureDecoder(url, audioFormat, videoFormat);
+    //return new Avion::AVAssetDecoder(url, audioFormat, videoFormat);
+    return new Avion::AVCaptureDecoder(url, audioFormat, videoFormat);
+}
+    
 }
 
 #else

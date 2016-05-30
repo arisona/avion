@@ -39,11 +39,12 @@ int main(int argc, char *argv[]) {
 
     const int audioSize = 1024;
 
-    AvionDecoder::AudioFormat audioFormat(true, AvionDecoder::PCM_32_FLOAT, 44100.0, 1024, true);
-    AvionDecoder::VideoFormat videoFormat(true, AvionDecoder::RGBA, true);
-    AvionDecoder* decoder = AvionDecoder::create("file:///Users/radar/Desktop/simian_mobile_disco-audacity_of_huge_(2009).mp4", audioFormat, videoFormat);
+    Avion::AvionDecoder::AudioFormat audioFormat(true, Avion::AvionDecoder::PCM_32_FLOAT, 44100.0, 1024, true);
+    Avion::AvionDecoder::VideoFormat videoFormat(true, Avion::AvionDecoder::RGBA, true);
+    Avion::AvionDecoder* decoder = Avion::AvionDecoder::create("file:///Users/radar/Desktop/simian_mobile_disco-audacity_of_huge_(2009).mp4", audioFormat, videoFormat);
 
     //wrapper->seek(60);
+    printf("decoder open: framerate=%f w=%d h=%d\n", decoder->getVideoFrameRate(), decoder->getVideoWidth(), decoder->getVideoHeight());
 
     size_t size = decoder->getVideoWidth() * decoder->getVideoHeight() * 4;
     uint8_t* image = new uint8_t[size];

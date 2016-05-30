@@ -44,9 +44,9 @@ JNIEXPORT jlong JNICALL Java_ch_fhnw_ether_avion_Avion_decoderCreate(JNIEnv * en
     const char* cUrl = env->GetStringUTFChars(url, JNI_FALSE);
     jlong nativeHandle = 0;
     try {
-        AvionDecoder::AudioFormat audioFormat(audioDecode, audioEncoding, audioSampleRate, audioBufferSize, audioInterleaved);
-        AvionDecoder::VideoFormat videoFormat(videoDecode, videoPixelFormat, videoFlip);
-        nativeHandle = (jlong)AvionDecoder::create(cUrl, audioFormat, videoFormat);
+        Avion::AvionDecoder::AudioFormat audioFormat(audioDecode, audioEncoding, audioSampleRate, audioBufferSize, audioInterleaved);
+        Avion::AvionDecoder::VideoFormat videoFormat(videoDecode, videoPixelFormat, videoFlip);
+        nativeHandle = (jlong)Avion::AvionDecoder::create(cUrl, audioFormat, videoFormat);
     } catch (...) {
     }
     env->ReleaseStringUTFChars(url, cUrl);
@@ -56,15 +56,35 @@ JNIEXPORT jlong JNICALL Java_ch_fhnw_ether_avion_Avion_decoderCreate(JNIEnv * en
 JNIEXPORT void JNICALL Java_ch_fhnw_ether_avion_Avion_decoderDispose
 (JNIEnv * env, jclass, jlong nativeHandle) {
     try {
-        delete (AvionDecoder*)nativeHandle;
+        delete (Avion::AvionDecoder*)nativeHandle;
     } catch (...) {
     }
 }
 
+JNIEXPORT jint JNICALL Java_ch_fhnw_ether_avion_Avion_startCapture
+(JNIEnv * env , jclass, jlong nativeHandle) {
+    try {
+        return ((Avion::AvionDecoder*)nativeHandle)->startCapture();
+    } catch (...) {
+        return Avion::INTERNAL_ERROR;
+    }
+}
+
+
+JNIEXPORT jint JNICALL Java_ch_fhnw_ether_avion_Avion_stopCapture
+(JNIEnv * env , jclass, jlong nativeHandle) {
+    try {
+        return ((Avion::AvionDecoder*)nativeHandle)->stopCapture();
+    } catch (...) {
+        return Avion::INTERNAL_ERROR;
+    }
+}
+
+
 JNIEXPORT int JNICALL Java_ch_fhnw_ether_avion_Avion_decoderSetRange
 (JNIEnv * env, jclass, jlong nativeHandle, jdouble start, jdouble end) {
     try {
-        return ((AvionDecoder*)nativeHandle)->setRange(start, end);
+        return ((Avion::AvionDecoder*)nativeHandle)->setRange(start, end);
     } catch (...) {
         return Avion::INTERNAL_ERROR;
     }
@@ -73,7 +93,7 @@ JNIEXPORT int JNICALL Java_ch_fhnw_ether_avion_Avion_decoderSetRange
 JNIEXPORT jboolean JNICALL Java_ch_fhnw_ether_avion_Avion_decoderHasAudio
 (JNIEnv * env, jclass, jlong nativeHandle) {
     try {
-        return ((AvionDecoder*)nativeHandle)->hasAudio();
+        return ((Avion::AvionDecoder*)nativeHandle)->hasAudio();
     } catch (...) {
         return false;
     }
@@ -82,7 +102,7 @@ JNIEXPORT jboolean JNICALL Java_ch_fhnw_ether_avion_Avion_decoderHasAudio
 JNIEXPORT jboolean JNICALL Java_ch_fhnw_ether_avion_Avion_decoderHasVideo
 (JNIEnv * env, jclass, jlong nativeHandle) {
     try {
-        return ((AvionDecoder*)nativeHandle)->hasVideo();
+        return ((Avion::AvionDecoder*)nativeHandle)->hasVideo();
     } catch (...) {
         return false;
     }
@@ -91,7 +111,7 @@ JNIEXPORT jboolean JNICALL Java_ch_fhnw_ether_avion_Avion_decoderHasVideo
 JNIEXPORT jdouble JNICALL Java_ch_fhnw_ether_avion_Avion_decoderGetDuration
 (JNIEnv * env, jclass, jlong nativeHandle) {
     try {
-        return ((AvionDecoder*)nativeHandle)->getDuration();
+        return ((Avion::AvionDecoder*)nativeHandle)->getDuration();
     } catch (...) {
         return Avion::INTERNAL_ERROR;
     }
@@ -100,7 +120,7 @@ JNIEXPORT jdouble JNICALL Java_ch_fhnw_ether_avion_Avion_decoderGetDuration
 JNIEXPORT jdouble JNICALL Java_ch_fhnw_ether_avion_Avion_decoderGetVideoFrameRate
 (JNIEnv * env, jclass, jlong nativeHandle) {
     try {
-        return ((AvionDecoder*)nativeHandle)->getVideoFrameRate();
+        return ((Avion::AvionDecoder*)nativeHandle)->getVideoFrameRate();
     } catch (...) {
         return Avion::INTERNAL_ERROR;
     }
@@ -109,7 +129,7 @@ JNIEXPORT jdouble JNICALL Java_ch_fhnw_ether_avion_Avion_decoderGetVideoFrameRat
 JNIEXPORT jint JNICALL Java_ch_fhnw_ether_avion_Avion_decoderGetVideoWidth
 (JNIEnv * env, jclass, jlong nativeHandle) {
     try {
-        return ((AvionDecoder*)nativeHandle)->getVideoWidth();
+        return ((Avion::AvionDecoder*)nativeHandle)->getVideoWidth();
     } catch (...) {
         return Avion::INTERNAL_ERROR;
     }
@@ -118,7 +138,7 @@ JNIEXPORT jint JNICALL Java_ch_fhnw_ether_avion_Avion_decoderGetVideoWidth
 JNIEXPORT jint JNICALL Java_ch_fhnw_ether_avion_Avion_decoderGetVideoHeight
 (JNIEnv * env, jclass, jlong nativeHandle) {
     try {
-        return ((AvionDecoder*)nativeHandle)->getVideoHeight();
+        return ((Avion::AvionDecoder*)nativeHandle)->getVideoHeight();
     } catch (...) {
         return Avion::INTERNAL_ERROR;
     }
@@ -129,7 +149,7 @@ JNIEXPORT jint JNICALL Java_ch_fhnw_ether_avion_Avion_decoderDecodeAudio
     try {
         uint8_t* buffer = (uint8_t*)env->GetDirectBufferAddress(byteBuffer);
         double pts = 0;
-        int result = ((AvionDecoder*)nativeHandle)->decodeAudio(buffer, pts);
+        int result = ((Avion::AvionDecoder*)nativeHandle)->decodeAudio(buffer, pts);
         if (ptsArray)
             env->SetDoubleArrayRegion(ptsArray, 0, 1, &pts);
         return result;
@@ -143,7 +163,7 @@ JNIEXPORT jint JNICALL Java_ch_fhnw_ether_avion_Avion_decoderDecodeVideo
     try {
         uint8_t* buffer = (uint8_t*)env->GetDirectBufferAddress(byteBuffer);
         double pts = 0;
-        int result = ((AvionDecoder*)nativeHandle)->decodeVideo(buffer, pts);
+        int result = ((Avion::AvionDecoder*)nativeHandle)->decodeVideo(buffer, pts);
         if (ptsArray)
             env->SetDoubleArrayRegion(ptsArray, 0, 1, &pts);
         return result;

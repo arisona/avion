@@ -42,16 +42,15 @@
 #define DLLEXPORT
 #endif
 
-class Avion {
-public:
-    static const int NO_ERROR = 0;
-    static const int END_OF_STREAM = -1;
-    static const int NO_SUCH_STREAM = -2;
-    static const int UNSUPPORTED_OPERATION = -3;
-    static const int INTERNAL_ERROR = -4;
-};
+namespace Avion {
 
-class AvionDecoder : public Avion {
+static const int NO_ERROR = 0;
+static const int END_OF_STREAM = -1;
+static const int NO_SUCH_STREAM = -2;
+static const int UNSUPPORTED_OPERATION = -3;
+static const int INTERNAL_ERROR = -4;
+
+class AvionDecoder {
 public:
     enum AudioEncoding {
         PCM_16_SIGNED,
@@ -88,6 +87,10 @@ protected:
     const AudioFormat audioFormat;
     const VideoFormat videoFormat;
     
+private:
+    AvionDecoder(const AvionDecoder&) = delete;
+    AvionDecoder& operator=(const AvionDecoder&) = delete;
+    AvionDecoder(AvionDecoder &&) = delete;
 
 public:
     DLLEXPORT static AvionDecoder* create(std::string url, const AudioFormat& audioFormat, const VideoFormat& videoFormat);
@@ -95,22 +98,36 @@ public:
     AvionDecoder(const std::string url, const AudioFormat& audioFormat, const VideoFormat& videoFormat) : url(url), audioFormat(audioFormat), videoFormat(videoFormat) {}
     
     virtual ~AvionDecoder() {}
+    
+    virtual int startCapture() {
+        return UNSUPPORTED_OPERATION;
+    }
+    
+    virtual int stopCapture() {
+        return UNSUPPORTED_OPERATION;
+    }
 
-    virtual int setRange(double start, double end = std::numeric_limits<double>::infinity()) = 0;
+    virtual int setRange(double start, double end = std::numeric_limits<double>::infinity()) {
+        return UNSUPPORTED_OPERATION;
+    }
 
-    virtual bool hasAudio() = 0;
+    virtual bool hasAudio() const = 0;
 
-    virtual bool hasVideo() = 0;
+    virtual bool hasVideo() const = 0;
 
-    virtual double getDuration() = 0;
+    virtual double getDuration() const {
+        return UNSUPPORTED_OPERATION;
+    }
 
-    virtual double getVideoFrameRate() = 0;
+    virtual double getVideoFrameRate() const = 0;
 
-    virtual int getVideoWidth() = 0;
+    virtual int getVideoWidth() const = 0;
 
-    virtual int getVideoHeight() = 0;
+    virtual int getVideoHeight() const = 0;
 
     virtual int decodeAudio(uint8_t* buffer, double& pts) = 0;
 
     virtual int decodeVideo(uint8_t* buffer, double& pts) = 0;
 };
+    
+} // namespace
