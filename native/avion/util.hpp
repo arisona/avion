@@ -51,7 +51,7 @@ template <typename T, typename C = std::deque<T>>
 class BlockingQueue final {
 
     const int maxSize;
-    std::mutex mutex;
+    mutable std::mutex mutex;
     std::condition_variable condition;
     C queue;
     std::atomic_bool overflow{false};
@@ -59,6 +59,7 @@ class BlockingQueue final {
     BlockingQueue(const BlockingQueue&) = delete;
     BlockingQueue& operator=(const BlockingQueue&) = delete;
     BlockingQueue(BlockingQueue &&) = delete;
+    BlockingQueue& operator=(BlockingQueue&&) = delete;
     
 public:
     explicit BlockingQueue(int maxSize) : maxSize(maxSize) {}
@@ -67,7 +68,7 @@ public:
         if (overflow)
             return false;
         std::unique_lock<std::mutex> lock(mutex);
-        if (queue.size < maxSize) {
+        if (queue.size() < maxSize) {
             queue.push_front(value);
             lock.unlock();
             condition.notify_one();
@@ -89,11 +90,11 @@ public:
         return QueueTakeResult::ok;
     }
     
-    QueueTakeResult take(T& value, std::chrono::milliseconds ms) {
+    QueueTakeResult take(T& value, int ms) {
         if (overflow.exchange(false))
             return QueueTakeResult::overflow;
         std::unique_lock<std::mutex> lock(mutex);
-        if (!condition.wait_for(lock, ms, [=]{ return !queue.empty(); }))
+        if (!condition.wait_for(lock, std::chrono::milliseconds(ms), [=]{ return !queue.empty(); }))
             return QueueTakeResult::timeout;
         value = std::move(queue.back());
         queue.pop_back();
@@ -111,8 +112,7 @@ public:
 template<typename T>
 class AudioBuffer final {
     struct Entry {
-        Entry(double pts, T* samples, int length) : pts(pts), length(length), start(0) {
-            samples = new T[length];
+        Entry(double pts, T* samples, int length) : pts(pts), samples(new T[length]), length(length), start(0) {
             std::copy(samples, samples + length, samples);
         }
 
@@ -120,9 +120,9 @@ class AudioBuffer final {
             delete[] samples;
         }
 
-        double pts;
-        T* samples;
-        int length;
+        const double pts;
+        const T* samples;
+        const int length;
         int start;
     };
 
@@ -135,6 +135,7 @@ class AudioBuffer final {
     AudioBuffer(const AudioBuffer&) = delete;
     AudioBuffer& operator=(const AudioBuffer&) = delete;
     AudioBuffer(AudioBuffer &&) = delete;
+    AudioBuffer& operator=(AudioBuffer&&) = delete;
 
 public:
     AudioBuffer(double sampleRate) : sampleRate(sampleRate), bufferSize(0) {

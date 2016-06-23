@@ -34,6 +34,7 @@
 #import <Foundation/Foundation.h>
 #import <AVFoundation/AVFoundation.h>
 
+#include <memory>
 #include <mutex>
 
 #include "avion.hpp"
@@ -49,19 +50,46 @@ static uint32_t BGRA2RGBA(uint32_t value) {
 
 namespace {
 
-class AutoReleasePool {
-    NSAutoreleasePool* pool_;
+template<typename R>
+class CFRef final {
+    R ref;
+    
 public:
-    AutoReleasePool() {
-        pool_ = [[NSAutoreleasePool alloc] init];
+    explicit CFRef() : ref(nullptr) {}
+    explicit CFRef(R ref, bool retain = true) : ref(ref) {
+        if (this->ref && retain) CFRetain(ref);
     }
     
-    ~AutoReleasePool() {
-        [pool_ release];
+    CFRef(const CFRef& sb) {
+        this->ref = sb.ref;
+        if (this->ref) CFRetain(this->ref);
     }
+    
+    CFRef& operator=(const CFRef& sb) {
+        this->ref = sb.ref;
+        if (this->ref) CFRetain(this->ref);
+        return *this;
+    }
+    
+    CFRef(CFRef&& sb) {
+        this->ref = sb.ref;
+        sb.ref = nullptr;
+    }
+    
+    CFRef& operator=(CFRef&& sb) {
+        this->ref = sb.ref;
+        sb.ref = nullptr;
+        return *this;
+    }
+
+    ~CFRef() { if (ref) CFRelease(ref); }
+    
+    R get() const { return ref; }
+    R operator*() const { return ref; }
+    bool operator!() const { return ref; }
 };
     
-}
+} // namespace
 
 
 // TODO:
@@ -69,33 +97,84 @@ public:
 // - flip / no flip image vertically, optimise pixel transfer
 // - RGBA / BGRA support
 
-namespace Avion {
 
+namespace Avion { class AVCaptureDecoder; }
+
+@interface AudioDataDelegate : NSObject <AVCaptureAudioDataOutputSampleBufferDelegate>
+@property Avion::AVCaptureDecoder* decoder;
+- (id) initWithDecoder: (Avion::AVCaptureDecoder*) decoder;
+@end
+
+@interface VideoDataDelegate : NSObject <AVCaptureVideoDataOutputSampleBufferDelegate>
+@property Avion::AVCaptureDecoder* decoder;
+- (id) initWithDecoder: (Avion::AVCaptureDecoder*) decoder;
+@end
+
+
+namespace Avion {
 
 class AVDecoderBase : public AvionDecoder {
 protected:
+    static const int QUEUE_TAKE_TIMEOUT_MS = 1000;
+    static const int MAX_AUDIO_QUEUE_SIZE = 16;
+    static const int MAX_VIDEO_QUEUE_SIZE = 16;
+    
+    struct AudioType {
+        typedef AVCaptureAudioDataOutput Output;
+        typedef AudioDataDelegate Delegate;
+        static std::string tag() { return "audio"; }
+        static NSString* type() { return AVMediaTypeAudio; }
+        static const int queueSize = MAX_AUDIO_QUEUE_SIZE;
+        static AVAssetReaderOutput* output(AVAssetTrack* track, NSDictionary* settings) {
+            return [AVAssetReaderAudioMixOutput assetReaderAudioMixOutputWithAudioTracks:@[track] audioSettings:settings];
+        }
+        static void settings(AVCaptureAudioDataOutput* output, NSDictionary* settings) { output.audioSettings = settings; }
+    };
+    
+    struct VideoType {
+        typedef AVCaptureVideoDataOutput Output;
+        typedef VideoDataDelegate Delegate;
+        static std::string tag() { return "video"; }
+        static NSString* type() { return AVMediaTypeVideo; }
+        static const int queueSize = MAX_VIDEO_QUEUE_SIZE;
+        static AVAssetReaderOutput* output(AVAssetTrack* track, NSDictionary* settings) {
+            return [AVAssetReaderTrackOutput assetReaderTrackOutputWithTrack:track outputSettings:settings];
+        }
+        static void settings(AVCaptureVideoDataOutput* output, NSDictionary* settings) { output.videoSettings = settings; }
+    };
+    
     AVDecoderBase(std::string url, AudioFormat audioFormat, VideoFormat videoFormat)
     : AvionDecoder(url, audioFormat, videoFormat) {}
     
     ~AVDecoderBase() {}
 
-    int decodeAudioSampleBuffer(CMSampleBufferRef sampleBuffer) {
+    int decodeAudioSampleBuffer(CMSampleBufferRef ref, AudioBuffer<uint8_t>& buffer) {
+        double pts = CMTimeGetSeconds(CMSampleBufferGetPresentationTimeStamp(ref));
+        
+        CMBlockBufferRef blockBuffer = CMSampleBufferGetDataBuffer(ref);
+        if (!blockBuffer)
+            throw std::runtime_error("cannot get block buffer from sample buffer: " + url);
+        
+        size_t length = 0;
+        uint8_t* samples = nullptr;
+        if (CMBlockBufferGetDataPointer(blockBuffer, 0, nullptr, &length, (char**)&samples) != kCMBlockBufferNoErr)
+            throw std::runtime_error("cannot get audio data from block buffer");
+        
+        //MSG("avf: put audio samples: %ld %f %f %f %f \n", length, samples[0], samples[1], samples[2], samples[3]);
+        buffer.put(samples, length, pts);
         return NO_ERROR;
     }
     
-    int decodeVideoSampleBuffer(CMSampleBufferRef sampleBuffer, uint8_t* buffer, double& pts) {
+    int decodeVideoSampleBuffer(CMSampleBufferRef ref, uint8_t* buffer, double& pts) {
         int w = getVideoWidth();
         int h = getVideoHeight();
         uint32_t* dst = (uint32_t*)buffer;
-        pts = CMTimeGetSeconds(CMSampleBufferGetPresentationTimeStamp(sampleBuffer));
+        pts = CMTimeGetSeconds(CMSampleBufferGetPresentationTimeStamp(ref));
         
-        CVImageBufferRef imageBuffer = CMSampleBufferGetImageBuffer(sampleBuffer);
-        if (!imageBuffer) {
-            MSG("avf: cannot get image buffer from sample buffer\n");
-            return INTERNAL_ERROR;
-        }
+        CVImageBufferRef imageBuffer = CMSampleBufferGetImageBuffer(ref);
+        if (!imageBuffer)
+            throw std::runtime_error("cannot get image buffer from sample buffer: " + url);
         
-        // lock the image buffer
         CVPixelBufferLockBaseAddress(imageBuffer, 0);
         
         // note: if movie width cannot be divided by 4 it seems the movie is scaled up to the next width that can
@@ -113,169 +192,159 @@ protected:
             }
         }
         
-        // unlock the image buffer
         CVPixelBufferUnlockBaseAddress(imageBuffer, 0);
-        
         return NO_ERROR;
+    }
+    
+    NSDictionary* getAudioSettings() {
+        NSDictionary* settings = @{
+            AVFormatIDKey : @(kAudioFormatLinearPCM),
+            AVSampleRateKey : @(audioFormat.sampleRate),
+            AVNumberOfChannelsKey : @(2),
+            AVLinearPCMBitDepthKey : @(audioFormat.encoding == PCM_32_FLOAT ? 32 : 16),
+            AVLinearPCMIsNonInterleaved : @(audioFormat.interleaved ? NO : YES),
+            AVLinearPCMIsFloatKey : @(audioFormat.encoding == PCM_32_FLOAT ? YES : NO),
+            AVLinearPCMIsBigEndianKey : @(NO),
+        };
+        return settings;
+    }
+
+    NSDictionary* getVideoSettings() {
+        NSDictionary* settings = @{
+            (NSString*)kCVPixelBufferPixelFormatTypeKey : @(kCVPixelFormatType_32BGRA)
+        };
+        return settings;
     }
 };
 
 
 
 class AVAssetDecoder : public AVDecoderBase {
+    
+    template<typename TYPE>
+    class Reader {
+    public:
+        AVAssetTrack* track = nullptr;
+        AVAssetReader* reader = nullptr;
+        AVAssetReaderOutput* output = nullptr;
+        
+        Reader(AVAsset* asset) {
+            NSArray* tracks = [asset tracksWithMediaType:TYPE::type()];
+            if ([tracks count] == 0)
+                throw std::runtime_error("no tracks");
+            track = [tracks objectAtIndex:0];
+        }
+        
+        ~Reader() {
+            [reader release];
+        }
+        
+        void start(AVAsset* asset, NSDictionary* settings, CMTimeRange range) {
+            if (reader) {
+                [reader release];
+                reader = nullptr;
+                output = nullptr;
+            }
+            NSError* error = nullptr;
+            reader = [[AVAssetReader alloc] initWithAsset:asset error:&error];
+            if (!reader || error)
+                throw std::runtime_error("could not initialize reader for");
+
+            output = TYPE::output(track, settings);
+            [reader addOutput:output];
+            reader.timeRange = range;
+            if ([reader startReading] != YES) {
+                [reader release];
+                reader = nullptr;
+                throw std::runtime_error("could not start reading");
+            }
+        }
+        
+        bool running() {
+            return reader && [reader status] == AVAssetReaderStatusReading;
+        }
+        
+        CFRef<CMSampleBufferRef> nextBuffer() {
+            auto ref = CFRef<CMSampleBufferRef>([output copyNextSampleBuffer], false);
+            if (!ref)
+                throw std::runtime_error("could not get sample buffer");
+            return ref;
+        }
+    };
+
 private:
     AVAsset* asset = nullptr;
-    AVAssetTrack* audioTrack = nullptr;
-    AVAssetTrack* videoTrack = nullptr;
     
+    std::unique_ptr<Reader<AudioType>> audioReader;
+    AudioBuffer<uint8_t> audioBuffer;
+
+    std::unique_ptr<Reader<VideoType>> videoReader;
     double videoFrameRate = 0;
     CGSize videoSize = { 0, 0 };
-    
     double duration = 0;
-
-    AVAssetReader* audioReader = nullptr;
-    AVAssetReader* videoReader = nullptr;
-
-    AudioBuffer<uint8_t> audioQueue;
     
 public:
     AVAssetDecoder(std::string url, AudioFormat audioFormat, VideoFormat videoFormat)
-    : AVDecoderBase(url, audioFormat, videoFormat),
-      audioQueue(audioFormat.sampleRate) {
-
-        AutoReleasePool pool;
-        
-        NSURL* nsUrl = [NSURL URLWithString:[NSString stringWithCString:url.c_str() encoding:NSUTF8StringEncoding]];
-        if (!nsUrl) {
-            MSG("avf: invalid url '%s'\n", url.c_str());
-            throw std::invalid_argument("invalid url " + url);
-        }
-        
-        NSDictionary* options = @{ AVURLAssetPreferPreciseDurationAndTimingKey : @YES };
-        
-        //---- asset
-        asset = [AVURLAsset URLAssetWithURL:nsUrl options:options];
-        if (!asset) {
-            MSG("avf: invalid url '%s'\n", url.c_str());
-            throw std::invalid_argument("invalid url " + url);
-        }
-        
-        //--- audio track
-        if (audioFormat.decode) {
-            NSArray* audioTracks = [asset tracksWithMediaType:AVMediaTypeAudio];
-            if ([audioTracks count] > 0) {
-                audioTrack = [audioTracks objectAtIndex:0];
-            } else {
-                MSG("avf: no audio track for '%s'\n", url.c_str());
+    : AVDecoderBase(url, audioFormat, videoFormat), audioBuffer(audioFormat.sampleRate) {
+        @autoreleasepool {
+            NSURL* nsUrl = [NSURL URLWithString:[NSString stringWithCString:url.c_str() encoding:NSUTF8StringEncoding]];
+            if (!nsUrl)
+                throw std::invalid_argument("invalid url: " + url);
+              
+            NSDictionary* options = @{ AVURLAssetPreferPreciseDurationAndTimingKey : @YES };
+            asset = [AVURLAsset URLAssetWithURL:nsUrl options:options];
+            if (!asset)
+                throw std::invalid_argument("invalid url: " + url);
+            
+            if (audioFormat.decode) {
+                try {
+                    audioReader = std::unique_ptr<Reader<AudioType>>(new Reader<AudioType>(asset));
+                } catch (...) {
+                }
             }
-        }
-        
-        //--- video track
-        if (videoFormat.decode) {
-            NSArray* videoTracks = [asset tracksWithMediaType:AVMediaTypeVideo];
-            if ([videoTracks count] > 0) {
-                videoTrack = [videoTracks objectAtIndex:0];
-                videoFrameRate = [videoTrack nominalFrameRate];
-                videoSize = [videoTrack naturalSize];
-            } else {
-                MSG("avf: no video track for '%s'\n", url.c_str());
+            
+            if (videoFormat.decode) {
+                try {
+                    videoReader = std::unique_ptr<Reader<VideoType>>(new Reader<VideoType>(asset));
+                    videoFrameRate = [videoReader->track nominalFrameRate];
+                    videoSize = [videoReader->track naturalSize];
+                } catch (...) {
+                }
             }
+            duration = CMTimeGetSeconds([asset duration]);
+            setRange(0.0);
+            
+            //MSG("avf: %s: duration=%f framerate=%f size=%dx%d\n", url.c_str(), duration, videoFrameRate, (int)videoSize.width, (int)videoSize.height);
         }
-        
-        duration = CMTimeGetSeconds([asset duration]);
-        
-        setRange(0.0);
-        
-        //MSG("avf: %s: duration=%f framerate=%f size=%dx%d\n", url.c_str(), duration, videoFrameRate, (int)videoSize.width, (int)videoSize.height);
     }
     
     ~AVAssetDecoder() {
-
-        AutoReleasePool pool;
-
-        if (audioReader)
-            [audioReader release];
-        if (videoReader)
-            [videoReader release];
+        @autoreleasepool {
+            audioReader.reset();
+            videoReader.reset();
+        }
     }
     
     int setRange(double start, double end = std::numeric_limits<double>::infinity()) override {
-        
-        AutoReleasePool pool;
-        
-        NSError* error = nullptr;
-        CMTimeRange timeRange = CMTimeRangeMake(CMTimeMakeWithSeconds(start, 1), end == std::numeric_limits<double>::infinity() ? kCMTimePositiveInfinity : CMTimeMakeWithSeconds(end, 1));
-        
-        //---- setup audio reader
-        if (audioTrack) {
-            audioQueue.clear();
-            
-            if (audioReader != nullptr)
-                [audioReader release];
-            
-            audioReader = [[AVAssetReader alloc] initWithAsset:asset error:&error];
-            if (!audioReader || error) {
-                MSG("avf: could not initialize audio reader for '%s'\n", url.c_str());
-                throw std::runtime_error("could not initialize audio reader for " + url);
+        @autoreleasepool {
+            CMTimeRange timeRange = CMTimeRangeMake(CMTimeMakeWithSeconds(start, 1), end == std::numeric_limits<double>::infinity() ? kCMTimePositiveInfinity : CMTimeMakeWithSeconds(end, 1));
+            if (audioReader) {
+                audioBuffer.clear();
+                audioReader->start(asset, getAudioSettings(), timeRange);
             }
-            
-            NSDictionary* audioSettings = @{
-                AVFormatIDKey : @(kAudioFormatLinearPCM),
-                AVSampleRateKey : @(audioFormat.sampleRate),
-                AVNumberOfChannelsKey : @(2),
-                AVLinearPCMBitDepthKey : @(audioFormat.encoding == PCM_32_FLOAT ? 32 : 16),
-                AVLinearPCMIsNonInterleaved : @(audioFormat.interleaved ? NO : YES),
-                AVLinearPCMIsFloatKey : @(audioFormat.encoding == PCM_32_FLOAT ? YES : NO),
-                AVLinearPCMIsBigEndianKey : @(NO),
-            };
-            
-            [audioReader addOutput:[AVAssetReaderAudioMixOutput assetReaderAudioMixOutputWithAudioTracks:@[audioTrack] audioSettings:audioSettings]];
-            
-            audioReader.timeRange = timeRange;
-            
-            if ([audioReader startReading] != YES) {
-                [audioReader release];
-                audioReader = nullptr;
-                MSG("avf: could not start reading audio from '%s': %s\n", url.c_str(), [[[audioReader error] localizedDescription] UTF8String]);
-                throw std::runtime_error("could not start reading audio for " + url);
+            if (videoReader) {
+                videoReader->start(asset, getVideoSettings(), timeRange);
             }
+            return NO_ERROR;
         }
-        
-        //---- setup video reader
-        if (videoTrack) {
-            if (videoReader != nullptr)
-                [videoReader release];
-            
-            videoReader = [[AVAssetReader alloc] initWithAsset:asset error:&error];
-            if (!videoReader || error) {
-                MSG("avf: could not initialize video reader for '%s'\n", url.c_str());
-                throw std::runtime_error("could not initialize video reader for " + url);
-            }
-            
-            NSDictionary* videoSettings = @{
-                (NSString*)kCVPixelBufferPixelFormatTypeKey : @(kCVPixelFormatType_32BGRA)
-            };
-
-            [videoReader addOutput:[AVAssetReaderTrackOutput assetReaderTrackOutputWithTrack:videoTrack outputSettings:videoSettings]];
-            
-            videoReader.timeRange = timeRange;
-            
-            if ([videoReader startReading] != YES) {
-                [videoReader release];
-                videoReader = nullptr;
-                MSG("avf: could not start reading video from '%s': %s\n", url.c_str(), [[[videoReader error] localizedDescription] UTF8String]);
-                throw std::runtime_error("could not start reading video for " + url);
-            }
-        }
-        return NO_ERROR;
     }
     
     bool hasAudio() const override {
-        return audioTrack;
+        return audioReader ? true : false;
     }
     
     bool hasVideo() const override {
-        return videoTrack;
+        return videoReader ? true : false;
     }
     
     double getDuration() const override {
@@ -295,293 +364,164 @@ public:
     }
 
     int decodeAudio(uint8_t* buffer, double& pts) override {
-        
-        AutoReleasePool pool;
-        
-        if (!audioReader)
-            return NO_SUCH_STREAM;
-        
-        if ([audioReader status] != AVAssetReaderStatusReading) {
-            MSG("avf: get next audio frame: reached end of media\n");
-            return END_OF_STREAM;
+        @autoreleasepool {
+            if (!audioReader)
+                return NO_SUCH_STREAM;
+            if (!audioReader->running())
+                return END_OF_STREAM;
+            while (audioBuffer.size() < audioFormat.bufferSize) {
+                CFRef<CMSampleBufferRef> ref = audioReader->nextBuffer();
+                decodeAudioSampleBuffer(ref.get(), audioBuffer);
+            }
+            if (!audioBuffer.size())
+                return END_OF_STREAM;
+            return audioBuffer.take(buffer, audioFormat.bufferSize, pts);
         }
-        
-        AVAssetReaderOutput* output = [audioReader.outputs objectAtIndex:0];
-        while (audioQueue.size() < audioFormat.bufferSize) {
-            CMSampleBufferRef sampleBuffer = [output copyNextSampleBuffer];
-            if (!sampleBuffer) {
-                MSG("avf: get next audio frame: could not copy audio sample buffer\n");
-                break;
-            }
-            
-            double srcPts = CMTimeGetSeconds(CMSampleBufferGetPresentationTimeStamp(sampleBuffer));
-            
-            CMBlockBufferRef blockBuffer = CMSampleBufferGetDataBuffer(sampleBuffer);
-            if (!blockBuffer) {
-                MSG("avf: get next audio frame: could not get audio block buffer\n");
-                CFRelease(sampleBuffer);
-                return INTERNAL_ERROR;
-            }
-            
-            size_t srcLength = 0;
-            uint8_t* srcSamples = nullptr;
-            if (CMBlockBufferGetDataPointer(blockBuffer, 0, nullptr, &srcLength, (char**)&srcSamples) != kCMBlockBufferNoErr) {
-                MSG("avf: get next audio frame: cannot get audio data\n");
-                CFRelease(sampleBuffer);
-                return INTERNAL_ERROR;
-            }
-            
-            //MSG("avf: put audio samples: %ld %f %f %f %f \n", srcLength, srcSamples[0], srcSamples[1], srcSamples[2], srcSamples[3]);
-            audioQueue.put(srcSamples, srcLength, srcPts);
-            
-            CFRelease(sampleBuffer);
-        }
-        
-        if (!audioQueue.size())
-            return END_OF_STREAM;
-        
-        int received = audioQueue.take(buffer, audioFormat.bufferSize, pts);
-        
-        //MSG("avf: get audio samples: %d %f %f %f %f \n", received, buffer[0], buffer[1], buffer[2], buffer[3]);
-        
-        return received;
     }
 
     int decodeVideo(uint8_t* buffer, double& pts) override {
-        
-        AutoReleasePool pool;
-        
-        if (!videoReader)
-            return NO_SUCH_STREAM;
-        
-        if ([videoReader status] != AVAssetReaderStatusReading) {
-            MSG("avf: get next video frame: reached end of media\n");
-            return END_OF_STREAM;
+        @autoreleasepool {
+            if (!videoReader)
+                return NO_SUCH_STREAM;
+            if (!videoReader->running())
+                return END_OF_STREAM;
+            CFRef<CMSampleBufferRef> ref = videoReader->nextBuffer();
+            return decodeVideoSampleBuffer(ref.get(), buffer, pts);
         }
-        
-        AVAssetReaderOutput* output = [videoReader.outputs objectAtIndex:0];
-        CMSampleBufferRef sampleBuffer = [output copyNextSampleBuffer];
-        if (!sampleBuffer) {
-            MSG("avf: get next video frame: could not copy video sample buffer\n");
-            return END_OF_STREAM;
-        }
-        
-        int error = decodeVideoSampleBuffer(sampleBuffer, buffer, pts);
-        CFRelease(sampleBuffer);
-        
-        return error;
     }
 };
     
-} // namespace
-
-
-
-namespace Avion {
-    
-class AVCaptureDecoder;
-
-} // namespace
-
-
-@interface AudioDataDelegate : NSObject <AVCaptureAudioDataOutputSampleBufferDelegate>
-@property Avion::AVCaptureDecoder* decoder;
-- (id) initWithDecoder: (Avion::AVCaptureDecoder*) decoder;
-@end
-
-@interface VideoDataDelegate : NSObject <AVCaptureVideoDataOutputSampleBufferDelegate>
-@property Avion::AVCaptureDecoder* decoder;
-- (id) initWithDecoder: (Avion::AVCaptureDecoder*) decoder;
-@end
-
-
-namespace Avion {
 
 class AVCaptureDecoder : public AVDecoderBase {
-private:
-    static const int MAX_AUDIO_QUEUE_SIZE = 16;
-    static const int MAX_VIDEO_QUEUE_SIZE = 16;
-    
-    AVCaptureSession* audioSession = nullptr;
-    AVCaptureDevice* audioDevice = nullptr;
-    AVCaptureDeviceInput* audioInput = nullptr;
-    AVCaptureAudioDataOutput* audioOutput = nullptr;
-    dispatch_queue_t audioDispatchQueue = nullptr;
-    AudioDataDelegate* audioDataDelegate = nullptr;
 
-    BlockingQueue<CMSampleBufferRef> audioQueue;
+    template<typename TYPE>
+    class Session {
+    public:
+        AVCaptureSession* session = nullptr;
+        AVCaptureDevice* device = nullptr;
+        AVCaptureDeviceInput* input = nullptr;
+        typename TYPE::Output* output = nullptr;
+        dispatch_queue_t dispatchQueue = nullptr;
+        typename TYPE::Delegate* delegate = nullptr;
+        
+        BlockingQueue<CFRef<CMSampleBufferRef>> queue;
+        
+        Session(AVCaptureDecoder* decoder, NSDictionary* settings) : queue(TYPE::queueSize) {
+            NSError* error = nullptr;
+
+            // prepare session and inputs
+            session = [[AVCaptureSession alloc] init];
+            device = [AVCaptureDevice defaultDeviceWithMediaType:TYPE::type()];
+            if (!device) {
+                release();
+                MSG("avf: could not get capture device\n");
+                throw std::runtime_error("cannot open capture device");
+            }
+            input = [AVCaptureDeviceInput deviceInputWithDevice:device error:&error];
+            if (!input) {
+                release();
+                MSG("avf: could not get capture device input\n");
+                throw std::runtime_error("cannot open capture device");
+            }
+            if (![session canAddInput:input]) {
+                release();
+                MSG("avf: cannot add input to session\n");
+                throw std::runtime_error("cannot open capture device");
+            }
+            [session addInput:input];
+            
+            // prepare data output
+            output = [typename TYPE::Output new];
+            TYPE::settings(output, settings);
+            dispatchQueue = dispatch_queue_create("DataOutputQueue", DISPATCH_QUEUE_SERIAL);
+            delegate = [[typename TYPE::Delegate alloc] initWithDecoder:decoder];
+            [output setSampleBufferDelegate:delegate queue:dispatchQueue];
+            if (![session canAddOutput:output]) {
+                release();
+                MSG("avf: cannot add output to audio session\n");
+                throw std::runtime_error("cannot open capture device");
+            }
+            [session addOutput:output];
+        }
+        
+        ~Session() {
+            release();
+        }
+        
+        void start() {
+            [session startRunning];
+            if (![session isRunning]) {
+                MSG("avf: cannot start capture session\n");
+                throw std::runtime_error("cannot start capture session");
+            }
+        }
+        
+        void stop() {
+            [session stopRunning];
+        }
+        
+        void release() {
+            if (dispatchQueue)
+                dispatch_release(dispatchQueue);
+            [delegate release];
+            [output release];
+            [session release];
+        }
+    };
     
+private:
+    std::unique_ptr<Session<AudioType>> audioSession;
     AudioBuffer<uint8_t> audioBuffer;
 
-    
-    AVCaptureSession* videoSession = nullptr;
-    AVCaptureDevice* videoDevice = nullptr;
-    AVCaptureDeviceInput* videoInput = nullptr;
-    AVCaptureVideoDataOutput* videoOutput = nullptr;
-    dispatch_queue_t videoDispatchQueue = nullptr;
-    VideoDataDelegate* videoDataDelegate = nullptr;
-
-    BlockingQueue<CMSampleBufferRef> videoQueue;
-    
+    std::unique_ptr<Session<VideoType>> videoSession;
     double videoFrameRate = 0;
     CGSize videoSize = { 0, 0 };
-    
     
 public:
     AVCaptureDecoder(std::string url, const AudioFormat& audioFormat, const VideoFormat& videoFormat)
     : AVDecoderBase(url, audioFormat, videoFormat),
-      audioQueue(MAX_AUDIO_QUEUE_SIZE), audioBuffer(audioFormat.sampleRate),
-      videoQueue(MAX_VIDEO_QUEUE_SIZE) {
-        
-        AutoReleasePool pool;
-        NSError* error = nullptr;
-        
-        if (audioFormat.decode) {
-            // prepare audio session and inputs
-            
-            audioSession = [[AVCaptureSession alloc] init];
-            audioDevice = [AVCaptureDevice defaultDeviceWithMediaType:AVMediaTypeAudio];
-            if (!audioDevice) {
-                release();
-                MSG("avf: could not get audio capture device '%s'\n", url.c_str());
-                throw std::runtime_error("cannot open capture device");
-            }
+      audioBuffer(audioFormat.sampleRate) {
+        @autoreleasepool {
+            if (audioFormat.decode)
+                audioSession = std::unique_ptr<Session<AudioType>>(new Session<AudioType>(this, getAudioSettings()));
 
-            audioInput = [AVCaptureDeviceInput deviceInputWithDevice:audioDevice error:&error];
-            if (!audioInput) {
-                release();
-                MSG("avf: could not get audio capture device input '%s'\n", url.c_str());
-                throw std::runtime_error("cannot open capture device");
-            }
-            
-            if (![audioSession canAddInput:audioInput]) {
-                release();
-                MSG("avf: cannot add audio input to session '%s'\n", url.c_str());
-                throw std::runtime_error("cannot open capture device");
-            }
-            [audioSession addInput:audioInput];
-            
-            
-            // prepare audio data output
-            
-            audioOutput = [AVCaptureAudioDataOutput new];
-            
-            NSDictionary* audioSettings = @{
-                AVFormatIDKey : @(kAudioFormatLinearPCM),
-                AVSampleRateKey : @(audioFormat.sampleRate),
-                AVNumberOfChannelsKey : @(2),
-                AVLinearPCMBitDepthKey : @(audioFormat.encoding == PCM_32_FLOAT ? 32 : 16),
-                AVLinearPCMIsNonInterleaved : @(audioFormat.interleaved ? NO : YES),
-                AVLinearPCMIsFloatKey : @(audioFormat.encoding == PCM_32_FLOAT ? YES : NO),
-                AVLinearPCMIsBigEndianKey : @(NO),
-            };
-            
-            audioOutput.audioSettings = audioSettings;
-            
-            audioDispatchQueue = dispatch_queue_create("AudioDataOutputQueue", DISPATCH_QUEUE_SERIAL);
-            
-            audioDataDelegate = [[AudioDataDelegate alloc] initWithDecoder:this];
-            [audioOutput setSampleBufferDelegate:audioDataDelegate queue:audioDispatchQueue];
-            
-            if (![audioSession canAddOutput:audioOutput]) {
-                release();
-                MSG("avf: cannot add audio output to audio session '%s'\n", url.c_str());
-                throw std::runtime_error("cannot open capture device");
-            }
-            [audioSession addOutput:audioOutput];
-        }
-
-        
-        if (videoFormat.decode) {
-            // prepare video session and inputs
-            
-            videoSession = [[AVCaptureSession alloc] init];
-            videoDevice = [AVCaptureDevice defaultDeviceWithMediaType:AVMediaTypeVideo];
-            if (!videoDevice) {
-                release();
-                MSG("avf: could not get video capture device '%s'\n", url.c_str());
-                throw std::runtime_error("cannot open capture device");
-            }
-            
-            videoInput = [AVCaptureDeviceInput deviceInputWithDevice:videoDevice error:&error];
-            if (!videoInput) {
-                release();
-                MSG("avf: could not get video capture device input '%s'\n", url.c_str());
-                throw std::runtime_error("cannot open capture device");
-            }
-            
-            if (![videoSession canAddInput:videoInput]) {
-                release();
-                MSG("avf: cannot add video input to session '%s'\n", url.c_str());
-                throw std::runtime_error("cannot open capture device");
-            }
-            [videoSession addInput:videoInput];
-
-            
-            // prepare video data output
-            
-            videoOutput = [AVCaptureVideoDataOutput new];
-            
-            NSDictionary* videoSettings = @{
-                (NSString*)kCVPixelBufferPixelFormatTypeKey : @(kCVPixelFormatType_32BGRA)
-            };
-            
-            videoOutput.videoSettings = videoSettings;
-            
-            [videoOutput setAlwaysDiscardsLateVideoFrames:NO];
-            
-            videoDispatchQueue = dispatch_queue_create("VideoDataOutputQueue", DISPATCH_QUEUE_SERIAL);
-            
-            videoDataDelegate = [[VideoDataDelegate alloc] initWithDecoder:this];
-            [videoOutput setSampleBufferDelegate:videoDataDelegate queue:videoDispatchQueue];
-            
-            if (![videoSession canAddOutput:videoOutput]) {
-                release();
-                MSG("avf: cannot add video output to session '%s'\n", url.c_str());
-                throw std::runtime_error("cannot open capture device");
-            }
-            [videoSession addOutput:videoOutput];
-            
-            
-            // get video format parameters
-
-            CMFormatDescriptionRef format = [[videoDevice activeFormat] formatDescription];
-            CMVideoDimensions dimension = CMVideoFormatDescriptionGetDimensions(format);
-            videoSize.width = dimension.width;
-            videoSize.height = dimension.height;
-            videoFrameRate = 1.0 / CMTimeGetSeconds([videoDevice activeVideoMinFrameDuration]);
+            if (videoFormat.decode)
+                videoSession = std::unique_ptr<Session<VideoType>>(new Session<VideoType>(this, getVideoSettings()));
         }
     }
     
     virtual ~AVCaptureDecoder() {
-        stopCapture();
-        release();
+        @autoreleasepool {
+            stopCapture();
+            // explicitly reset, so we're within pool scope
+            audioSession.reset();
+            videoSession.reset();
+        }
     }
     
     int startCapture() override {
-        if (audioSession) {
-            [audioSession startRunning];
-            if (![audioSession isRunning])
-                goto error;
+        @autoreleasepool {
+            try {
+                if (audioSession)
+                    audioSession->start();
+                if (videoSession)
+                    videoSession->start();
+                return NO_ERROR;
+            } catch (std::exception& e) {
+                stopCapture();
+                throw e;
+            }
         }
-        if (videoSession) {
-            [videoSession startRunning];
-            if (![videoSession isRunning])
-                goto error;
-        }
-        return NO_ERROR;
-        
-    error:
-        stopCapture();
-        return INTERNAL_ERROR;
     }
     
     int stopCapture() override {
-        if (audioSession)
-            [audioSession stopRunning];
-        if (videoSession)
-            [videoSession stopRunning];
-        return NO_ERROR;
+        @autoreleasepool {
+            if (audioSession)
+                audioSession->stop();
+            if (videoSession)
+                videoSession->stop();
+            return NO_ERROR;
+        }
     }
 
     int setRange(double start, double end = std::numeric_limits<double>::infinity()) override {
@@ -589,11 +529,11 @@ public:
     }
     
     bool hasAudio() const override {
-        return audioSession;
+        return audioSession ? true : false;
     }
     
     bool hasVideo() const override {
-        return videoSession;
+        return videoSession ? true : false;
     }
     
     double getDuration() const override {
@@ -613,34 +553,55 @@ public:
     }
     
     int decodeAudio(uint8_t* buffer, double& pts) override {
-        return UNSUPPORTED_OPERATION;
+        @autoreleasepool {
+            while (audioSession->queue.size() < audioFormat.bufferSize) {
+                CFRef<CMSampleBufferRef> ref;
+                auto result = audioSession->queue.take(ref, QUEUE_TAKE_TIMEOUT_MS);
+                if (result == QueueTakeResult::ok) {
+                    int error = decodeAudioSampleBuffer(ref.get(), audioBuffer);
+                    if (error)
+                        return error;
+                } else if (result == QueueTakeResult::overflow) {
+                    return QUEUE_OVERFLOW;
+                } else if (result == QueueTakeResult::timeout) {
+                    return WAIT_TIMEOUT;
+                }
+                return INTERNAL_ERROR;
+            }
+            if (!audioSession->queue.size())
+                return END_OF_STREAM;
+            int received = audioBuffer.take(buffer, audioFormat.bufferSize, pts);
+            //MSG("avf: get audio samples: %d %f %f %f %f \n", received, buffer[0], buffer[1], buffer[2], buffer[3]);
+            return received;
+        }
     }
     
     int decodeVideo(uint8_t* buffer, double& pts) override {
-        return UNSUPPORTED_OPERATION;
+        @autoreleasepool {
+            CFRef<CMSampleBufferRef> ref;
+            auto result = videoSession->queue.take(ref, QUEUE_TAKE_TIMEOUT_MS);
+            if (result == QueueTakeResult::ok)
+                return decodeVideoSampleBuffer(ref.get(), buffer, pts);
+            else if (result == QueueTakeResult::overflow)
+                return QUEUE_OVERFLOW;
+            else if (result == QueueTakeResult::timeout)
+                return WAIT_TIMEOUT;
+            return INTERNAL_ERROR;
+        }
     }
     
     void enqueueAudio(AVCaptureOutput* captureOutput, CMSampleBufferRef sampleBuffer, AVCaptureConnection* connection) {
         MSG("avf: enqueueAudio\n");
+        if (!audioSession->queue.put(CFRef<CMSampleBufferRef>(sampleBuffer))) {
+            MSG("avf: audio queue overflow\n");
+        }
     }
     
     void enqueueVideo(AVCaptureOutput* captureOutput, CMSampleBufferRef sampleBuffer, AVCaptureConnection* connection) {
         MSG("avf: enqueueVideo\n");        
-    }
-    
-private:
-    void release() {
-        if (audioDispatchQueue)
-            dispatch_release(audioDispatchQueue);
-        [audioDataDelegate release];
-        [audioOutput release];
-        [audioSession release];
-        
-        if (videoDispatchQueue)
-            dispatch_release(videoDispatchQueue);
-        [videoDataDelegate release];
-        [videoOutput release];
-        [videoSession release];
+        if (!videoSession->queue.put(CFRef<CMSampleBufferRef>(sampleBuffer))) {
+            MSG("avf: video queue overflow\n");
+        }
     }
 };
     

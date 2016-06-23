@@ -48,7 +48,9 @@ static const int NO_ERROR = 0;
 static const int END_OF_STREAM = -1;
 static const int NO_SUCH_STREAM = -2;
 static const int UNSUPPORTED_OPERATION = -3;
-static const int INTERNAL_ERROR = -4;
+static const int WAIT_TIMEOUT = -4;
+static const int QUEUE_OVERFLOW = -5;
+static const int INTERNAL_ERROR = -6;
 
 class AvionDecoder {
 public:
@@ -91,6 +93,7 @@ private:
     AvionDecoder(const AvionDecoder&) = delete;
     AvionDecoder& operator=(const AvionDecoder&) = delete;
     AvionDecoder(AvionDecoder &&) = delete;
+    AvionDecoder& operator=(AvionDecoder&&) = delete;
 
 public:
     DLLEXPORT static AvionDecoder* create(std::string url, const AudioFormat& audioFormat, const VideoFormat& videoFormat);
