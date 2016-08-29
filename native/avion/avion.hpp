@@ -31,20 +31,28 @@
 
 #pragma once
 
-#define MSG(...) { printf(__VA_ARGS__); fflush(stdout); }
-
 #include <limits>
 #include <string>
 
-class Avion {
-public:
-    static const int NO_ERROR = 0;
-    static const int END_OF_STREAM = -1;
-    static const int NO_SUCH_STREAM = -2;
-    static const int INTERNAL_ERROR = -3;
-};
+#define MSG(...) { printf(__VA_ARGS__); fflush(stdout); }
 
-class AvionDecoder : public Avion {
+#ifdef _WIN32
+#define DLLEXPORT __declspec(dllexport)
+#else
+#define DLLEXPORT
+#endif
+
+namespace Avion {
+
+static const int NO_ERROR = 0;
+static const int END_OF_STREAM = -1;
+static const int NO_SUCH_STREAM = -2;
+static const int UNSUPPORTED_OPERATION = -3;
+static const int WAIT_TIMEOUT = -4;
+static const int QUEUE_OVERFLOW = -5;
+static const int INTERNAL_ERROR = -6;
+
+class AvionDecoder {
 public:
     enum AudioEncoding {
         PCM_16_SIGNED,
@@ -76,25 +84,53 @@ public:
         const bool flip;
     };
     
-    static AvionDecoder* create(std::string url, AudioFormat audioFormat, VideoFormat videoFormat);
+protected:
+    const std::string url;
+    const AudioFormat audioFormat;
+    const VideoFormat videoFormat;
+    
+private:
+    AvionDecoder(const AvionDecoder&) = delete;
+    AvionDecoder& operator=(const AvionDecoder&) = delete;
+    AvionDecoder(AvionDecoder &&) = delete;
+    AvionDecoder& operator=(AvionDecoder&&) = delete;
+
+public:
+    DLLEXPORT static AvionDecoder* create(std::string url, const AudioFormat& audioFormat, const VideoFormat& videoFormat);
+
+    AvionDecoder(const std::string url, const AudioFormat& audioFormat, const VideoFormat& videoFormat) : url(url), audioFormat(audioFormat), videoFormat(videoFormat) {}
     
     virtual ~AvionDecoder() {}
     
-    virtual void setRange(double start, double end = std::numeric_limits<double>::infinity()) = 0;
+    virtual int startCapture() {
+        return UNSUPPORTED_OPERATION;
+    }
     
-    virtual bool hasAudio() = 0;
-    
-    virtual bool hasVideo() = 0;
-    
-    virtual double getDuration() = 0;
-    
-    virtual double getVideoFrameRate() = 0;
-    
-    virtual int getVideoWidth() = 0;
-    
-    virtual int getVideoHeight() = 0;
-    
+    virtual int stopCapture() {
+        return UNSUPPORTED_OPERATION;
+    }
+
+    virtual int setRange(double start, double end = std::numeric_limits<double>::infinity()) {
+        return UNSUPPORTED_OPERATION;
+    }
+
+    virtual bool hasAudio() const = 0;
+
+    virtual bool hasVideo() const = 0;
+
+    virtual double getDuration() const {
+        return UNSUPPORTED_OPERATION;
+    }
+
+    virtual double getVideoFrameRate() const = 0;
+
+    virtual int getVideoWidth() const = 0;
+
+    virtual int getVideoHeight() const = 0;
+
     virtual int decodeAudio(uint8_t* buffer, double& pts) = 0;
 
     virtual int decodeVideo(uint8_t* buffer, double& pts) = 0;
 };
+    
+} // namespace

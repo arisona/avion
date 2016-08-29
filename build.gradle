@@ -8,18 +8,31 @@ repositories {
     maven { url "https://oss.sonatype.org/content/repositories/snapshots" }
 }
 
-//project.ext.lwjglVersion = "3.0.0b"
-project.ext.lwjglVersion = "3.0.0-SNAPSHOT"
+public String getLwjglArch(String platform) {
+  switch(platform.replaceAll(' ', '').toLowerCase()) {
+    case ~/.*linux.*/:  return 'linux'
+    case ~/.*darwin.*/: return 'macos'
+    case ~/.*osx.*/:    return 'macos'
+    case ~/.*win.*/:    return 'windows'
+    default:            return platform
+  }
+}
+
+ext {
+  //lwjglVersion = "3.0.0b"
+  lwjglVersion = "3.0.1-SNAPSHOT"
+  lwjglArch = getLwjglArch(System.properties['os.name'])
+}
 
 dependencies {
     compile fileTree(dir: "$buildDir/native-libs", include: "avion-natives.jar")
 
     testCompile "org.lwjgl:lwjgl:$lwjglVersion"
-    testCompile "org.lwjgl:lwjgl-platform:$lwjglVersion:natives-windows"
-    testCompile "org.lwjgl:lwjgl-platform:$lwjglVersion:natives-linux"
-    testCompile "org.lwjgl:lwjgl-platform:$lwjglVersion:natives-osx"
+    testCompile "org.lwjgl:lwjgl-opengl:$lwjglVersion"
+    testCompile "org.lwjgl:lwjgl-glfw:$lwjglVersion"
 
-    //testCompile 'junit:junit:4.12'
+    testRuntime "org.lwjgl:lwjgl:$lwjglVersion:natives-$lwjglArch"
+    testRuntime "org.lwjgl:lwjgl-glfw:$lwjglVersion:natives-$lwjglArch"
 }
 
 task nativeLibsToJar(type: Jar, description: 'create a jar archive of the native libs') {

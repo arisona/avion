@@ -70,8 +70,12 @@ public final class Avion {
 			boolean videoDecode, int videoFormat, boolean videoFlip);
     
 	static native void decoderDispose(long nativeHandle);
+	
+	static native int startCapture(long nativeHandle);
+	
+	static native int stopCapture(long nativeHandle);
 
-    static native void decoderSetRange(long nativeHandle, double start, double end);
+    static native int decoderSetRange(long nativeHandle, double start, double end);
 
     static native boolean decoderHasAudio(long nativeHandle);
 

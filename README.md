@@ -14,6 +14,7 @@ A typical application example is to decode video files, and use the video frames
 - Support for standard formats and containers (e.g. H.264; .mov, .mp4)
 - Support for video capture devices (web cams, etc.)
 - Small size (20KB...)
+- BSD License; no licensing issues since using native OS AV libraries
 
 
 ## TODO
